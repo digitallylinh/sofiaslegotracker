@@ -856,6 +856,8 @@ async function dbSavePhoto(setNum, dataUrl) {
   if (error) {
     console.error('dbSavePhoto error:', error.message, error.details, error.hint);
     notify('⚠️ Photo save failed: ' + error.message);
+  } else {
+    notify('📸 Photo saved!');
   }
 }
 
@@ -1188,14 +1190,34 @@ document.getElementById("manual-add-btn").onclick = async () => {
 document.getElementById("photo-input").addEventListener("change", async e => {
   const file = e.target.files[0];
   if (!file || !photoTarget) return;
-  const reader = new FileReader();
-  reader.onload = async ev => {
-    photos[photoTarget] = ev.target.result;
-    await dbSavePhoto(photoTarget, ev.target.result);
-    notify("📸 Photo added!"); render();
-  };
-  reader.readAsDataURL(file);
   e.target.value = "";
+
+  // Compress image via canvas before saving — reduces size from ~500KB to ~20KB
+  const compressImage = (file) => new Promise((resolve) => {
+    const img = new Image();
+    const url = URL.createObjectURL(file);
+    img.onload = () => {
+      const MAX = 400; // max width/height in px
+      let w = img.width, h = img.height;
+      if (w > h) { if (w > MAX) { h = h * MAX / w; w = MAX; } }
+      else        { if (h > MAX) { w = w * MAX / h; h = MAX; } }
+      const canvas = document.createElement('canvas');
+      canvas.width = w; canvas.height = h;
+      canvas.getContext('2d').drawImage(img, 0, 0, w, h);
+      URL.revokeObjectURL(url);
+      resolve(canvas.toDataURL('image/jpeg', 0.7));
+    };
+    img.src = url;
+  });
+
+  notify("📸 Saving photo…");
+  const compressed = await compressImage(file);
+  console.log('Photo size (chars):', compressed.length);
+
+  photos[photoTarget] = compressed;
+  render(); // show immediately in UI
+
+  await dbSavePhoto(photoTarget, compressed);
 });
 
 // ─── INIT ─────────────────────────────────────────────────────────────────────
