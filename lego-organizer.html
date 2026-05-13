@@ -1,0 +1,845 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>🧱 Brick Tracker</title>
+<link href="https://fonts.googleapis.com/css2?family=Quicksand:wght@400;500;600;700&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: 'Quicksand', 'Nunito', sans-serif; background: #fff5f8; min-height: 100vh; }
+  button { font-family: inherit; cursor: pointer; transition: all 0.15s; border: none; }
+  button:hover { opacity: 0.85; transform: translateY(-1px); }
+  input { font-family: inherit; }
+  input:focus { outline: none; border-color: #F48BAD !important; box-shadow: 0 0 0 3px #F48BAD33 !important; }
+
+  #app { max-width: 820px; margin: 0 auto; padding-bottom: 4rem; }
+
+  /* LOADING */
+  #loading-screen {
+    position: fixed; inset: 0; background: #fff5f8;
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    z-index: 999; gap: 16px;
+  }
+  #loading-screen .spin {
+    width: 48px; height: 48px; border: 4px solid #F9C8DA;
+    border-top-color: #F48BAD; border-radius: 50%;
+    animation: spin 0.8s linear infinite;
+  }
+  #loading-screen p { color: #C25080; font-weight: 700; font-size: 15px; }
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  /* HEADER */
+  #header {
+    background: linear-gradient(135deg, #F9AABF 0%, #F4789E 40%, #EF6090 100%);
+    border-radius: 0 0 32px 32px;
+    padding: 2rem 2rem 1.75rem;
+    margin-bottom: 1.5rem;
+    box-shadow: 0 6px 30px rgba(240,100,140,0.35);
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    flex-wrap: wrap;
+    gap: 14px;
+  }
+  #header h1 { font-size: 28px; font-weight: 700; color: #fff; letter-spacing: 0.5px; text-shadow: 0 2px 8px rgba(180,60,100,0.3); line-height: 1.1; }
+  #header .subtitle { font-size: 13px; color: rgba(255,255,255,0.9); margin-top: 5px; font-weight: 500; }
+  #stats { display: flex; gap: 10px; flex-wrap: wrap; }
+  .stat-box {
+    background: rgba(255,255,255,0.55); backdrop-filter: blur(8px);
+    border-radius: 16px; padding: 10px 18px; text-align: center;
+    border: 1.5px solid rgba(255,255,255,0.8); box-shadow: 0 2px 8px rgba(244,167,185,0.15);
+  }
+  .stat-num { font-size: 20px; font-weight: 700; color: #b0305a; }
+  .stat-lbl { font-size: 11px; color: #c06080; font-weight: 600; }
+
+  #main { padding: 0 1.25rem; }
+
+  /* NOTIFICATION */
+  #notification {
+    display: none; background: linear-gradient(135deg, #fce8f0, #fcd0e0);
+    color: #b03060; border-radius: 14px; padding: 10px 18px;
+    margin-bottom: 14px; font-size: 13px; font-weight: 700;
+    text-align: center; border: 1.5px solid #f9b8cc;
+    animation: popIn 0.25s cubic-bezier(.34,1.56,.64,1);
+    box-shadow: 0 4px 16px rgba(240,100,140,0.2);
+  }
+
+  /* TABS */
+  #tabs { display: flex; gap: 8px; margin-bottom: 18px; flex-wrap: wrap; }
+  .tab-btn {
+    flex: 1 1 45%; min-width: 45%; max-width: 50%;
+    padding: 12px 8px; border-radius: 18px;
+    font-weight: 700; font-size: 12px;
+    transition: all 0.2s cubic-bezier(.34,1.56,.64,1);
+    text-align: center;
+  }
+  .tab-btn .tab-icon { display: block; font-size: 22px; margin-bottom: 3px; }
+  .tab-btn .tab-label { display: block; line-height: 1.2; }
+  .tab-btn .tab-count { display: inline-block; margin-top: 5px; border-radius: 20px; padding: 1px 10px; font-size: 13px; font-weight: 800; }
+
+  /* GIFTER */
+  #gifter-btn-wrap { margin-bottom: 14px; display: none; }
+  #gift-mode-panel {
+    display: none; background: #fff; border: 2px solid #F9C8DA;
+    border-radius: 20px; padding: 1.25rem; margin-bottom: 14px;
+    box-shadow: 0 4px 20px rgba(240,100,140,0.12);
+  }
+  #gifter-banner {
+    display: none; background: #FFF5F9; border: 2px solid #F9C8DA;
+    border-radius: 16px; padding: 12px 16px; margin-bottom: 14px;
+    justify-content: space-between; align-items: center;
+  }
+
+  /* CAT HEADER */
+  #cat-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 14px; }
+  #cat-meta { font-size: 12px; color: #d0a0b0; margin-left: 10px; font-weight: 600; }
+
+  /* SEARCH */
+  #search-panel {
+    display: none; background: #fff; border-radius: 20px;
+    padding: 1.2rem; margin-bottom: 16px;
+    box-shadow: 0 4px 20px rgba(240,100,140,0.08);
+  }
+  #search-input {
+    width: 100%; padding: 11px 16px; border-radius: 14px;
+    font-size: 14px; margin-bottom: 10px; border: 2px solid #F9C8DA; background: #FFF5F9;
+  }
+  #search-results-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(170px, 1fr)); gap: 10px; }
+  .search-card { border-radius: 16px; padding: 10px; display: flex; flex-direction: column; gap: 6px; }
+  .search-tile { border-radius: 10px; height: 100px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px; }
+  .search-card-name { font-weight: 700; font-size: 12px; color: #555; line-height: 1.3; }
+  .search-card-meta { font-size: 10px; color: #c0a0b0; font-weight: 600; }
+  .search-add-btn { margin-top: auto; padding: 7px 0; border-radius: 10px; color: #fff; font-weight: 700; font-size: 12px; width: 100%; }
+
+  /* SETS GRID */
+  #sets-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 14px; }
+  #empty-state { text-align: center; padding: 4rem 1rem; display: none; }
+  #empty-state .empty-icon { font-size: 52px; margin-bottom: 12px; }
+  #empty-state .empty-title { font-size: 16px; font-weight: 700; color: #f0b0c8; margin-bottom: 6px; }
+  #empty-state .empty-sub { font-size: 13px; color: #e0a0b8; }
+
+  .set-card { background: #fff; border-radius: 20px; padding: 13px; box-shadow: 0 3px 14px rgba(240,100,140,0.07); position: relative; }
+  .set-tile { border-radius: 14px; height: 120px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 6px; margin-bottom: 10px; cursor: pointer; position: relative; overflow: hidden; }
+  .set-tile img { width: 100%; height: 100%; object-fit: cover; position: absolute; inset: 0; }
+  .set-tile-icon { font-size: 40px; position: relative; z-index: 1; }
+  .set-tile-num { font-size: 10px; font-weight: 700; position: relative; z-index: 1; }
+  .set-tile-overlay { position: absolute; inset: 0; background: rgba(0,0,0,0); display: flex; align-items: center; justify-content: center; opacity: 0; transition: all 0.2s; z-index: 2; }
+  .set-tile-overlay span { color: #fff; font-size: 11px; font-weight: 700; background: rgba(0,0,0,0.5); padding: 4px 10px; border-radius: 20px; }
+  .set-tile:hover .set-tile-overlay { opacity: 1; background: rgba(0,0,0,0.35); }
+  .set-card-name { font-weight: 700; font-size: 13px; color: #555; line-height: 1.3; margin-bottom: 3px; }
+  .set-card-sub { font-size: 11px; color: #d0a0b0; margin-bottom: 3px; }
+  .set-theme-badge { display: inline-block; font-size: 10px; font-weight: 700; border-radius: 10px; padding: 2px 8px; margin-bottom: 4px; border: 1px solid; }
+  .set-pieces { font-size: 12px; color: #c0a0b0; font-weight: 600; }
+  .set-actions { margin-top: 10px; display: flex; gap: 6px; align-items: center; }
+  .move-btn { padding: 5px 8px; border-radius: 10px; font-size: 16px; line-height: 1; }
+  .del-btn { padding: 5px 8px; border-radius: 10px; font-size: 16px; line-height: 1; margin-left: auto; background: #fff0f4; border: 1.5px solid #f9c8da !important; }
+  .photo-del-btn { padding: 5px 8px; border-radius: 10px; font-size: 14px; line-height: 1; background: #fff0f4; border: 1.5px solid #f9c8da !important; }
+
+  .gifter-card { background: #fff; border-radius: 20px; padding: 14px; box-shadow: 0 3px 14px rgba(240,100,140,0.07); }
+  .gifter-tile { border-radius: 12px; height: 110px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 6px; margin-bottom: 10px; overflow: hidden; position: relative; }
+  .gifter-tile img { width: 100%; height: 100%; object-fit: cover; position: absolute; inset: 0; }
+  .gifter-tile-icon, .gifter-tile-num { position: relative; z-index: 1; }
+
+  /* MODAL */
+  #modal-overlay { display: none; position: fixed; inset: 0; background: rgba(200,80,120,0.25); align-items: center; justify-content: center; z-index: 100; backdrop-filter: blur(4px); }
+  #modal-box { background: #fff; border-radius: 24px; padding: 1.75rem; max-width: 320px; width: 90%; box-shadow: 0 20px 60px rgba(240,100,140,0.2); border: 2px solid #f9c8da; text-align: center; }
+
+  @keyframes popIn {
+    from { opacity: 0; transform: scale(0.9) translateY(-4px); }
+    to   { opacity: 1; transform: scale(1) translateY(0); }
+  }
+</style>
+</head>
+<body>
+
+<div id="loading-screen">
+  <div class="spin"></div>
+  <p>Loading your collection…</p>
+</div>
+
+<div id="app" style="display:none">
+  <div id="header">
+    <div>
+      <h1>🧱 Brick Tracker</h1>
+      <div class="subtitle">your cozy LEGO collection ✨</div>
+    </div>
+    <div id="stats">
+      <div class="stat-box"><div class="stat-num" id="stat-owned">0</div><div class="stat-lbl">sets owned</div></div>
+      <div class="stat-box"><div class="stat-num" id="stat-pieces">0</div><div class="stat-lbl">owned pieces</div></div>
+      <div class="stat-box"><div class="stat-num" id="stat-wishlist">0</div><div class="stat-lbl">on wishlist</div></div>
+    </div>
+  </div>
+
+  <div id="main">
+    <div id="notification"></div>
+    <div id="tabs"></div>
+
+    <div id="gifter-btn-wrap">
+      <button id="gifter-btn" style="padding:8px 18px;border-radius:20px;border:2px solid #F9C8DA;background:#FFF5F9;color:#C25080;font-weight:700;font-size:13px;">🎀 Gifter view</button>
+    </div>
+
+    <div id="gift-mode-panel">
+      <div style="font-weight:700;font-size:15px;margin-bottom:6px;color:#C25080;">🎀 Enter Gifter Code</div>
+      <div style="font-size:13px;color:#aaa;margin-bottom:12px;">Demo code: <strong>GIFTER</strong></div>
+      <div style="display:flex;gap:8px;">
+        <input id="gift-code-input" placeholder="Enter code…" style="flex:1;padding:8px 14px;border-radius:12px;border:2px solid #F9C8DA;font-size:14px;" />
+        <button id="gift-submit" style="padding:8px 16px;border-radius:12px;background:#F9C8DA;color:#C25080;font-weight:700;">Enter</button>
+        <button id="gift-close" style="padding:8px 12px;border-radius:12px;background:#f5f5f5;">✕</button>
+      </div>
+      <div id="gift-error" style="color:#c03060;font-size:12px;margin-top:8px;display:none;"></div>
+    </div>
+
+    <div id="gifter-banner">
+      <span style="color:#C25080;font-weight:700;font-size:13px;">🎀 Gifter view — mark what you've bought!</span>
+      <button id="gifter-exit" style="padding:5px 14px;border-radius:10px;background:#F9C8DA;color:#C25080;font-weight:700;font-size:12px;">Exit</button>
+    </div>
+
+    <div id="cat-header">
+      <div>
+        <span id="cat-title" style="font-size:19px;font-weight:700;"></span>
+        <span id="cat-meta"></span>
+      </div>
+      <button id="add-set-btn" style="padding:8px 18px;border-radius:20px;color:#fff;font-weight:700;font-size:13px;"></button>
+    </div>
+
+    <div id="search-panel">
+      <div id="search-label" style="font-weight:700;font-size:14px;margin-bottom:10px;">🔍 Search LEGO sets</div>
+      <input id="search-input" placeholder="e.g. Flower Bouquet, 10280, Friends…" />
+      <div id="search-results-grid"></div>
+    </div>
+
+    <div id="empty-state">
+      <div class="empty-icon" id="empty-icon">📦</div>
+      <div class="empty-title">Nothing here yet~</div>
+      <div class="empty-sub" id="empty-sub">Click "+ Add Set" to get started ✨</div>
+    </div>
+    <div id="sets-grid"></div>
+  </div>
+
+  <div id="modal-overlay">
+    <div id="modal-box">
+      <div style="font-size:36px;margin-bottom:10px;">🗑️</div>
+      <div style="font-size:15px;font-weight:700;margin-bottom:8px;color:#c03060;">Remove this set?</div>
+      <div style="font-size:13px;color:#999;margin-bottom:20px;"><strong id="modal-set-name" style="color:#666;"></strong> will be removed from your list</div>
+      <div style="display:flex;gap:10px;">
+        <button id="modal-confirm" style="flex:1;padding:10px 0;border-radius:14px;background:linear-gradient(135deg,#F48BAD,#F06090);color:#fff;font-weight:700;">Remove 🗑️</button>
+        <button id="modal-cancel" style="flex:1;padding:10px 0;border-radius:14px;background:#f5f0f2;font-weight:700;color:#c0a0b0;">Keep 💖</button>
+      </div>
+    </div>
+  </div>
+
+  <input type="file" id="photo-input" accept="image/*" style="display:none;">
+</div>
+
+<script>
+// ─── CONFIG — replace these with your Supabase project values ───────────────
+const SUPABASE_URL = 'https://ibpvmncnlrobrivmjccf.supabase.co';
+const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImlicHZtbmNubHJvYnJpdm1qY2NmIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzg2Nzc3MjMsImV4cCI6MjA5NDI1MzcyM30.leLl5aWjEVYGGYjbmM2vn7jeS_Z5tBJmV3MS6oRE-qk';
+// ────────────────────────────────────────────────────────────────────────────
+
+const { createClient } = supabase;
+const db = createClient(SUPABASE_URL, SUPABASE_KEY);
+
+const CATEGORIES = [
+  { id:"building", label:"Building Now", icon:"🔨", color:"#F48BAD", soft:"#FFF0F6", border:"#F9C8DA", text:"#C2426E" },
+  { id:"to_build", label:"To Be Built",  icon:"📦", color:"#F4A7C3", soft:"#FFF5F9", border:"#F9D0E0", text:"#C25080" },
+  { id:"completed", label:"Completed",   icon:"🌸", color:"#F7BDD0", soft:"#FFF8FA", border:"#FAD8E6", text:"#C2607A" },
+  { id:"wishlist",  label:"Wishlist",    icon:"⭐", color:"#F9CADB", soft:"#FFFBFC", border:"#FCE0EB", text:"#C06080" },
+];
+const OWNED_CATEGORIES = ["building","to_build","completed"];
+
+const THEME_COLORS = {
+  "Icons":       { bg:"#FFF0F6", accent:"#F48BAD", icon:"🏛️" },
+  "Star Wars":   { bg:"#1a1a2e", accent:"#FFD700", icon:"⭐" },
+  "Technic":     { bg:"#1a1a1a", accent:"#E3000B", icon:"⚙️" },
+  "Ideas":       { bg:"#E8F4FD", accent:"#2196F3", icon:"💡" },
+  "Friends":     { bg:"#FFF0F9", accent:"#FF69B4", icon:"💖" },
+  "Harry Potter":{ bg:"#1a0a2e", accent:"#C9A84C", icon:"⚡" },
+  "DC":          { bg:"#0D0D2B", accent:"#1E90FF", icon:"🦇" },
+  "Marvel":      { bg:"#8B0000", accent:"#FFD700", icon:"🕷️" },
+  "Disney":      { bg:"#FFF5E6", accent:"#FF8C00", icon:"✨" },
+  "Ninjago":     { bg:"#1a1a1a", accent:"#FF4500", icon:"🐉" },
+  "Creator":     { bg:"#F0FFF0", accent:"#228B22", icon:"🧩" },
+  "City":        { bg:"#E8F5FF", accent:"#1565C0", icon:"🏙️" },
+};
+const getTheme = t => THEME_COLORS[t] || { bg:"#FFF0F6", accent:"#F48BAD", icon:"🧱" };
+
+const LEGO_DB = [
+  { set_num:"10280-1", name:"Flower Bouquet", year:2021, num_parts:756, theme:"Icons" },
+  { set_num:"10281-1", name:"Bonsai Tree", year:2021, num_parts:878, theme:"Icons" },
+  { set_num:"10283-1", name:"NASA Space Shuttle Discovery", year:2021, num_parts:2354, theme:"Icons" },
+  { set_num:"10285-1", name:"Hogwarts Castle", year:2021, num_parts:6020, theme:"Icons" },
+  { set_num:"10290-1", name:"Pickup Truck", year:2022, num_parts:1677, theme:"Icons" },
+  { set_num:"10292-1", name:"The Friends Apartments", year:2021, num_parts:2048, theme:"Icons" },
+  { set_num:"10294-1", name:"Titanic", year:2021, num_parts:9090, theme:"Icons" },
+  { set_num:"10295-1", name:"Porsche 911", year:2021, num_parts:1458, theme:"Icons" },
+  { set_num:"10297-1", name:"Boutique Hotel", year:2022, num_parts:3066, theme:"Icons" },
+  { set_num:"10298-1", name:"Vespa 125", year:2022, num_parts:1106, theme:"Icons" },
+  { set_num:"10299-1", name:"Real Madrid Bernabéu Stadium", year:2022, num_parts:5876, theme:"Icons" },
+  { set_num:"10300-1", name:"Back to the Future Time Machine", year:2022, num_parts:1872, theme:"Icons" },
+  { set_num:"10302-1", name:"Optimus Prime", year:2022, num_parts:1508, theme:"Icons" },
+  { set_num:"10303-1", name:"Loop Coaster", year:2022, num_parts:3756, theme:"Icons" },
+  { set_num:"10304-1", name:"Chevrolet Camaro Z28", year:2022, num_parts:1456, theme:"Icons" },
+  { set_num:"10305-1", name:"Lion Knights Castle", year:2022, num_parts:4514, theme:"Icons" },
+  { set_num:"10306-1", name:"Atari 2600", year:2022, num_parts:2532, theme:"Icons" },
+  { set_num:"10307-1", name:"Eiffel Tower", year:2022, num_parts:10001, theme:"Icons" },
+  { set_num:"10308-1", name:"Holiday Main Street", year:2022, num_parts:1514, theme:"Icons" },
+  { set_num:"10309-1", name:"Succulents", year:2023, num_parts:771, theme:"Icons" },
+  { set_num:"10311-1", name:"Orchid", year:2023, num_parts:608, theme:"Icons" },
+  { set_num:"10313-1", name:"Wildflower Bouquet", year:2023, num_parts:939, theme:"Icons" },
+  { set_num:"10314-1", name:"Dried Flower Centerpiece", year:2023, num_parts:812, theme:"Icons" },
+  { set_num:"10315-1", name:"Tranquil Garden", year:2023, num_parts:1363, theme:"Icons" },
+  { set_num:"10316-1", name:"The Lord of the Rings Rivendell", year:2023, num_parts:6167, theme:"Icons" },
+  { set_num:"10317-1", name:"Land Rover Classic Defender 90", year:2023, num_parts:2336, theme:"Icons" },
+  { set_num:"10318-1", name:"Concorde", year:2023, num_parts:2083, theme:"Icons" },
+  { set_num:"10319-1", name:"Barad-dur", year:2023, num_parts:5471, theme:"Icons" },
+  { set_num:"10321-1", name:"Corvette", year:2023, num_parts:1210, theme:"Icons" },
+  { set_num:"10323-1", name:"PAC-MAN Arcade", year:2023, num_parts:2651, theme:"Icons" },
+  { set_num:"10326-1", name:"Natural History Museum", year:2024, num_parts:4014, theme:"Icons" },
+  { set_num:"10327-1", name:"Dune Atreides Royal Ornithopter", year:2024, num_parts:1369, theme:"Icons" },
+  { set_num:"10328-1", name:"Bouquet of Roses", year:2024, num_parts:2453, theme:"Icons" },
+  { set_num:"10329-1", name:"Tiny Plants", year:2024, num_parts:758, theme:"Icons" },
+  { set_num:"10330-1", name:"McLaren MP4 and Ayrton Senna", year:2024, num_parts:693, theme:"Icons" },
+  { set_num:"10331-1", name:"Kingfisher Bird", year:2024, num_parts:560, theme:"Icons" },
+  { set_num:"10276-1", name:"Colosseum", year:2020, num_parts:9036, theme:"Icons" },
+  { set_num:"10270-1", name:"Bookshop", year:2020, num_parts:2504, theme:"Icons" },
+  { set_num:"10278-1", name:"Police Station", year:2021, num_parts:2923, theme:"Icons" },
+  { set_num:"10274-1", name:"Ghostbusters ECTO-1", year:2020, num_parts:2352, theme:"Icons" },
+  { set_num:"10255-1", name:"Assembly Square", year:2017, num_parts:4002, theme:"Icons" },
+  { set_num:"10256-1", name:"Taj Mahal", year:2017, num_parts:5923, theme:"Icons" },
+  { set_num:"10261-1", name:"Roller Coaster", year:2018, num_parts:4124, theme:"Icons" },
+  { set_num:"10265-1", name:"Ford Mustang", year:2019, num_parts:1471, theme:"Icons" },
+  { set_num:"10266-1", name:"NASA Apollo 11 Lunar Lander", year:2019, num_parts:1087, theme:"Icons" },
+  { set_num:"10271-1", name:"Fiat 500", year:2020, num_parts:960, theme:"Icons" },
+  { set_num:"10179-1", name:"Millennium Falcon UCS", year:2007, num_parts:5195, theme:"Icons" },
+  { set_num:"75192-1", name:"Millennium Falcon", year:2017, num_parts:7541, theme:"Star Wars" },
+  { set_num:"75252-1", name:"Imperial Star Destroyer", year:2019, num_parts:4784, theme:"Star Wars" },
+  { set_num:"75290-1", name:"Mos Eisley Cantina", year:2020, num_parts:3187, theme:"Star Wars" },
+  { set_num:"75304-1", name:"Darth Vader Helmet", year:2021, num_parts:834, theme:"Star Wars" },
+  { set_num:"75306-1", name:"Imperial Probe Droid", year:2021, num_parts:683, theme:"Star Wars" },
+  { set_num:"75308-1", name:"R2-D2", year:2021, num_parts:2314, theme:"Star Wars" },
+  { set_num:"75309-1", name:"Republic Gunship", year:2021, num_parts:3292, theme:"Star Wars" },
+  { set_num:"75313-1", name:"AT-AT", year:2021, num_parts:6785, theme:"Star Wars" },
+  { set_num:"75318-1", name:"The Child", year:2020, num_parts:1073, theme:"Star Wars" },
+  { set_num:"75331-1", name:"The Razor Crest", year:2022, num_parts:6187, theme:"Star Wars" },
+  { set_num:"75335-1", name:"BD-1", year:2022, num_parts:1062, theme:"Star Wars" },
+  { set_num:"75341-1", name:"Luke Skywalkers Landspeeder", year:2022, num_parts:1890, theme:"Star Wars" },
+  { set_num:"75347-1", name:"TIE Bomber", year:2023, num_parts:625, theme:"Star Wars" },
+  { set_num:"75355-1", name:"X-wing Starfighter", year:2023, num_parts:1949, theme:"Star Wars" },
+  { set_num:"75356-1", name:"Executor Super Star Destroyer", year:2023, num_parts:1189, theme:"Star Wars" },
+  { set_num:"75357-1", name:"Ghost and Phantom II", year:2023, num_parts:1394, theme:"Star Wars" },
+  { set_num:"75365-1", name:"Yavin 4 Rebel Base", year:2023, num_parts:1066, theme:"Star Wars" },
+  { set_num:"75367-1", name:"Venator-Class Republic Attack Cruiser", year:2024, num_parts:5374, theme:"Star Wars" },
+  { set_num:"75371-1", name:"Chewbacca", year:2023, num_parts:2319, theme:"Star Wars" },
+  { set_num:"75375-1", name:"Millennium Falcon", year:2024, num_parts:921, theme:"Star Wars" },
+  { set_num:"75376-1", name:"Tantive IV", year:2024, num_parts:654, theme:"Star Wars" },
+  { set_num:"75377-1", name:"Invisible Hand", year:2024, num_parts:3075, theme:"Star Wars" },
+  { set_num:"75379-1", name:"R2-D2", year:2024, num_parts:1050, theme:"Star Wars" },
+  { set_num:"75382-1", name:"TIE Fighter", year:2024, num_parts:1685, theme:"Star Wars" },
+  { set_num:"75327-1", name:"Luke Skywalker Red Five Helmet", year:2022, num_parts:675, theme:"Star Wars" },
+  { set_num:"75328-1", name:"The Mandalorian Helmet", year:2022, num_parts:584, theme:"Star Wars" },
+  { set_num:"75329-1", name:"Death Star Trench Run Diorama", year:2022, num_parts:665, theme:"Star Wars" },
+  { set_num:"75330-1", name:"Dagobah Jedi Training Diorama", year:2022, num_parts:1000, theme:"Star Wars" },
+  { set_num:"75349-1", name:"Captain Rex Helmet", year:2023, num_parts:854, theme:"Star Wars" },
+  { set_num:"75350-1", name:"Clone Commander Cody Helmet", year:2023, num_parts:766, theme:"Star Wars" },
+  { set_num:"75351-1", name:"Princess Leia Helmet", year:2023, num_parts:668, theme:"Star Wars" },
+  { set_num:"75352-1", name:"Emperors Throne Room Diorama", year:2023, num_parts:807, theme:"Star Wars" },
+  { set_num:"42083-1", name:"Bugatti Chiron", year:2018, num_parts:3599, theme:"Technic" },
+  { set_num:"42096-1", name:"Porsche 911 RSR", year:2018, num_parts:1580, theme:"Technic" },
+  { set_num:"42110-1", name:"Land Rover Defender", year:2019, num_parts:2573, theme:"Technic" },
+  { set_num:"42115-1", name:"Lamborghini Sian FKP 37", year:2020, num_parts:3696, theme:"Technic" },
+  { set_num:"42122-1", name:"Jeep Wrangler", year:2021, num_parts:665, theme:"Technic" },
+  { set_num:"42125-1", name:"Ferrari 488 GTE", year:2021, num_parts:1677, theme:"Technic" },
+  { set_num:"42126-1", name:"Ford F-150 Raptor", year:2021, num_parts:1379, theme:"Technic" },
+  { set_num:"42128-1", name:"Heavy-Duty Tow Truck", year:2021, num_parts:2017, theme:"Technic" },
+  { set_num:"42130-1", name:"BMW M 1000 RR", year:2021, num_parts:1920, theme:"Technic" },
+  { set_num:"42131-1", name:"Cat D11 Bulldozer", year:2021, num_parts:3854, theme:"Technic" },
+  { set_num:"42141-1", name:"McLaren Formula 1 Race Car", year:2022, num_parts:1432, theme:"Technic" },
+  { set_num:"42143-1", name:"Ferrari Daytona SP3", year:2022, num_parts:3778, theme:"Technic" },
+  { set_num:"42145-1", name:"Airbus H175 Rescue Helicopter", year:2022, num_parts:2001, theme:"Technic" },
+  { set_num:"42146-1", name:"Liebherr LTM 1230-5.1 Crane", year:2023, num_parts:2883, theme:"Technic" },
+  { set_num:"42151-1", name:"Bugatti Bolide", year:2023, num_parts:905, theme:"Technic" },
+  { set_num:"42154-1", name:"Ford GT", year:2023, num_parts:1466, theme:"Technic" },
+  { set_num:"42156-1", name:"PEUGEOT 9X8 Hypercar", year:2023, num_parts:1775, theme:"Technic" },
+  { set_num:"42158-1", name:"NASA Mars Rover Perseverance", year:2023, num_parts:1132, theme:"Technic" },
+  { set_num:"42159-1", name:"Yamaha MT-10 SP", year:2023, num_parts:1478, theme:"Technic" },
+  { set_num:"42161-1", name:"Lamborghini Huracan Tecnica", year:2023, num_parts:806, theme:"Technic" },
+  { set_num:"42168-1", name:"Ferrari SF-23 F1", year:2024, num_parts:770, theme:"Technic" },
+  { set_num:"42171-1", name:"Mercedes-AMG F1 W14", year:2024, num_parts:1642, theme:"Technic" },
+  { set_num:"21309-1", name:"NASA Apollo Saturn V", year:2017, num_parts:1969, theme:"Ideas" },
+  { set_num:"21310-1", name:"Old Fishing Store", year:2017, num_parts:2049, theme:"Ideas" },
+  { set_num:"21313-1", name:"Ship in a Bottle", year:2018, num_parts:962, theme:"Ideas" },
+  { set_num:"21315-1", name:"Pop-Up Book", year:2018, num_parts:859, theme:"Ideas" },
+  { set_num:"21317-1", name:"Steamboat Willie", year:2019, num_parts:751, theme:"Ideas" },
+  { set_num:"21318-1", name:"Tree House", year:2019, num_parts:3036, theme:"Ideas" },
+  { set_num:"21319-1", name:"Central Perk", year:2019, num_parts:1070, theme:"Ideas" },
+  { set_num:"21320-1", name:"Dinosaur Fossils", year:2019, num_parts:910, theme:"Ideas" },
+  { set_num:"21321-1", name:"International Space Station", year:2020, num_parts:864, theme:"Ideas" },
+  { set_num:"21322-1", name:"Pirates of Barracuda Bay", year:2020, num_parts:2545, theme:"Ideas" },
+  { set_num:"21323-1", name:"Grand Piano", year:2020, num_parts:3662, theme:"Ideas" },
+  { set_num:"21324-1", name:"123 Sesame Street", year:2021, num_parts:1367, theme:"Ideas" },
+  { set_num:"21325-1", name:"Medieval Blacksmith", year:2021, num_parts:2164, theme:"Ideas" },
+  { set_num:"21326-1", name:"Winnie the Pooh", year:2021, num_parts:1265, theme:"Ideas" },
+  { set_num:"21327-1", name:"Typewriter", year:2021, num_parts:2079, theme:"Ideas" },
+  { set_num:"21328-1", name:"Seinfeld", year:2021, num_parts:1326, theme:"Ideas" },
+  { set_num:"21329-1", name:"Fender Stratocaster", year:2021, num_parts:1074, theme:"Ideas" },
+  { set_num:"21330-1", name:"Home Alone", year:2021, num_parts:3955, theme:"Ideas" },
+  { set_num:"21331-1", name:"Sonic the Hedgehog Green Hill Zone", year:2022, num_parts:1125, theme:"Ideas" },
+  { set_num:"21332-1", name:"The Globe", year:2022, num_parts:2585, theme:"Ideas" },
+  { set_num:"21333-1", name:"Vincent van Gogh The Starry Night", year:2022, num_parts:2316, theme:"Ideas" },
+  { set_num:"21334-1", name:"Jazz Quartet", year:2022, num_parts:1615, theme:"Ideas" },
+  { set_num:"21335-1", name:"Motorised Lighthouse", year:2022, num_parts:2065, theme:"Ideas" },
+  { set_num:"21336-1", name:"The Office", year:2023, num_parts:1164, theme:"Ideas" },
+  { set_num:"21337-1", name:"Table Football", year:2022, num_parts:2339, theme:"Ideas" },
+  { set_num:"21338-1", name:"A-Frame Cabin", year:2023, num_parts:2082, theme:"Ideas" },
+  { set_num:"21340-1", name:"Tales of the Space Age", year:2023, num_parts:688, theme:"Ideas" },
+  { set_num:"21341-1", name:"Disney Hocus Pocus", year:2023, num_parts:2316, theme:"Ideas" },
+  { set_num:"21342-1", name:"The Insect Collection", year:2023, num_parts:1111, theme:"Ideas" },
+  { set_num:"21343-1", name:"Viking Village", year:2023, num_parts:2103, theme:"Ideas" },
+  { set_num:"21344-1", name:"The Milky Way Galaxy", year:2023, num_parts:3091, theme:"Ideas" },
+  { set_num:"21345-1", name:"Polaroid OneStep SX-70 Camera", year:2023, num_parts:516, theme:"Ideas" },
+  { set_num:"21346-1", name:"Family Tree", year:2024, num_parts:1573, theme:"Ideas" },
+  { set_num:"21347-1", name:"Parisian Cafe", year:2024, num_parts:2049, theme:"Ideas" },
+  { set_num:"21348-1", name:"Dungeons and Dragons", year:2024, num_parts:3745, theme:"Ideas" },
+  { set_num:"21349-1", name:"Tuxedo Cat", year:2024, num_parts:1710, theme:"Ideas" },
+  { set_num:"41704-1", name:"Main Street Building", year:2022, num_parts:1682, theme:"Friends" },
+  { set_num:"41711-1", name:"Emmas Art School", year:2022, num_parts:844, theme:"Friends" },
+  { set_num:"41720-1", name:"Water Park", year:2022, num_parts:1001, theme:"Friends" },
+  { set_num:"41727-1", name:"Dog Rescue Centre", year:2023, num_parts:617, theme:"Friends" },
+  { set_num:"41729-1", name:"Organic Grocery Store", year:2023, num_parts:830, theme:"Friends" },
+  { set_num:"41730-1", name:"Autumns House", year:2023, num_parts:1116, theme:"Friends" },
+  { set_num:"41731-1", name:"Heartlake International School", year:2023, num_parts:985, theme:"Friends" },
+  { set_num:"41732-1", name:"Downtown Flower and Design Stores", year:2023, num_parts:1068, theme:"Friends" },
+  { set_num:"41735-1", name:"Mobile Tiny House", year:2023, num_parts:785, theme:"Friends" },
+  { set_num:"41737-1", name:"Mobile Amusement Park", year:2023, num_parts:1915, theme:"Friends" },
+  { set_num:"41743-1", name:"Hair Salon", year:2023, num_parts:401, theme:"Friends" },
+  { set_num:"41744-1", name:"Sports Centre", year:2023, num_parts:1062, theme:"Friends" },
+  { set_num:"41745-1", name:"Andreas Horse Stable", year:2023, num_parts:545, theme:"Friends" },
+  { set_num:"41757-1", name:"Botanical Garden", year:2024, num_parts:1072, theme:"Friends" },
+  { set_num:"41758-1", name:"Heartlake City Apartments", year:2024, num_parts:1154, theme:"Friends" },
+  { set_num:"75978-1", name:"Diagon Alley", year:2020, num_parts:5544, theme:"Harry Potter" },
+  { set_num:"75979-1", name:"Hedwig", year:2020, num_parts:630, theme:"Harry Potter" },
+  { set_num:"75980-1", name:"Attack on the Burrow", year:2020, num_parts:1047, theme:"Harry Potter" },
+  { set_num:"76389-1", name:"Hogwarts Chamber of Secrets", year:2021, num_parts:1176, theme:"Harry Potter" },
+  { set_num:"76391-1", name:"Hogwarts Icons Collectors Edition", year:2021, num_parts:3010, theme:"Harry Potter" },
+  { set_num:"76392-1", name:"Hogwarts Wizard Chess", year:2022, num_parts:876, theme:"Harry Potter" },
+  { set_num:"76394-1", name:"Fawkes Dumbledores Phoenix", year:2022, num_parts:597, theme:"Harry Potter" },
+  { set_num:"76398-1", name:"Hogwarts Hospital Wing", year:2022, num_parts:510, theme:"Harry Potter" },
+  { set_num:"76399-1", name:"Hogwarts Magical Trunk", year:2022, num_parts:603, theme:"Harry Potter" },
+  { set_num:"76402-1", name:"Hogwarts Dumbledores Office", year:2022, num_parts:654, theme:"Harry Potter" },
+  { set_num:"76403-1", name:"The Ministry of Magic", year:2022, num_parts:990, theme:"Harry Potter" },
+  { set_num:"76405-1", name:"Hogwarts Express Collectors Edition", year:2022, num_parts:5129, theme:"Harry Potter" },
+  { set_num:"76406-1", name:"Hungarian Horntail Dragon", year:2022, num_parts:671, theme:"Harry Potter" },
+  { set_num:"76407-1", name:"The Shrieking Shack and Whomping Willow", year:2022, num_parts:777, theme:"Harry Potter" },
+  { set_num:"76408-1", name:"12 Grimmauld Place", year:2022, num_parts:1083, theme:"Harry Potter" },
+  { set_num:"76409-1", name:"The Gryffindor Tower", year:2023, num_parts:991, theme:"Harry Potter" },
+  { set_num:"76410-1", name:"The Slytherin Dungeon", year:2023, num_parts:1074, theme:"Harry Potter" },
+  { set_num:"76411-1", name:"The Ravenclaw Tower", year:2023, num_parts:931, theme:"Harry Potter" },
+  { set_num:"76414-1", name:"Expecto Patronum", year:2023, num_parts:754, theme:"Harry Potter" },
+  { set_num:"76415-1", name:"The Battle of Hogwarts", year:2023, num_parts:730, theme:"Harry Potter" },
+  { set_num:"76417-1", name:"Gringotts Wizarding Bank", year:2023, num_parts:4803, theme:"Harry Potter" },
+  { set_num:"76419-1", name:"Hogwarts Castle and Grounds", year:2023, num_parts:2660, theme:"Harry Potter" },
+  { set_num:"76421-1", name:"Dobby the House-Elf", year:2023, num_parts:403, theme:"Harry Potter" },
+  { set_num:"76422-1", name:"Diagon Alley Weasleys Wizard Wheezes", year:2023, num_parts:834, theme:"Harry Potter" },
+  { set_num:"76139-1", name:"1989 Batmobile", year:2019, num_parts:3306, theme:"DC" },
+  { set_num:"76161-1", name:"1989 Batwing", year:2020, num_parts:2363, theme:"DC" },
+  { set_num:"76182-1", name:"Batman Cowl", year:2021, num_parts:410, theme:"DC" },
+  { set_num:"76188-1", name:"Batman Classic TV Series Batmobile", year:2021, num_parts:345, theme:"DC" },
+  { set_num:"76224-1", name:"Batmobile Pursuit Batman vs The Joker", year:2023, num_parts:438, theme:"DC" },
+  { set_num:"76240-1", name:"Batmobile Tumbler", year:2021, num_parts:2049, theme:"DC" },
+  { set_num:"76252-1", name:"Batcave Shadow Box", year:2023, num_parts:3981, theme:"DC" },
+  { set_num:"76165-1", name:"Iron Man Helmet", year:2020, num_parts:480, theme:"Marvel" },
+  { set_num:"76178-1", name:"Daily Bugle", year:2021, num_parts:3772, theme:"Marvel" },
+  { set_num:"76187-1", name:"Venom", year:2021, num_parts:565, theme:"Marvel" },
+  { set_num:"76191-1", name:"Infinity Gauntlet", year:2021, num_parts:590, theme:"Marvel" },
+  { set_num:"76193-1", name:"The Guardians Ship", year:2022, num_parts:1901, theme:"Marvel" },
+  { set_num:"76199-1", name:"Carnage", year:2021, num_parts:546, theme:"Marvel" },
+  { set_num:"76206-1", name:"Iron Man Figure", year:2021, num_parts:381, theme:"Marvel" },
+  { set_num:"76210-1", name:"Hulkbuster", year:2022, num_parts:4049, theme:"Marvel" },
+  { set_num:"76215-1", name:"Black Panther", year:2022, num_parts:2961, theme:"Marvel" },
+  { set_num:"76218-1", name:"Sanctum Sanctorum", year:2022, num_parts:2708, theme:"Marvel" },
+  { set_num:"76241-1", name:"Wolverines Adamantium Claws", year:2023, num_parts:605, theme:"Marvel" },
+  { set_num:"76246-1", name:"Avengers Quinjet", year:2023, num_parts:795, theme:"Marvel" },
+  { set_num:"76255-1", name:"The New Guardians Ship", year:2023, num_parts:1108, theme:"Marvel" },
+  { set_num:"76261-1", name:"Spider-Man Final Battle", year:2023, num_parts:900, theme:"Marvel" },
+  { set_num:"76262-1", name:"Captain Americas Shield", year:2023, num_parts:3128, theme:"Marvel" },
+  { set_num:"76269-1", name:"Avengers Tower", year:2023, num_parts:5201, theme:"Marvel" },
+  { set_num:"43197-1", name:"The Ice Castle", year:2021, num_parts:1709, theme:"Disney" },
+  { set_num:"43202-1", name:"The Madrigal House", year:2021, num_parts:587, theme:"Disney" },
+  { set_num:"43205-1", name:"Enchanted Treehouse", year:2022, num_parts:1116, theme:"Disney" },
+  { set_num:"43207-1", name:"Ariels Underwater Palace", year:2022, num_parts:498, theme:"Disney" },
+  { set_num:"43209-1", name:"Elsas Frozen Castle", year:2022, num_parts:420, theme:"Disney" },
+  { set_num:"43217-1", name:"Up House", year:2023, num_parts:598, theme:"Disney" },
+  { set_num:"43222-1", name:"Disney Castle", year:2023, num_parts:4837, theme:"Disney" },
+  { set_num:"43224-1", name:"King Magnificos Castle", year:2023, num_parts:613, theme:"Disney" },
+  { set_num:"43225-1", name:"The Little Mermaid Royal Clamshell", year:2023, num_parts:489, theme:"Disney" },
+  { set_num:"71741-1", name:"NINJAGO City Gardens", year:2021, num_parts:5685, theme:"Ninjago" },
+  { set_num:"71749-1", name:"Final Flight of Destinys Bounty", year:2021, num_parts:1739, theme:"Ninjago" },
+  { set_num:"71756-1", name:"Hydro Bounty", year:2021, num_parts:1159, theme:"Ninjago" },
+  { set_num:"71767-1", name:"Ninja Dojo Temple", year:2022, num_parts:1394, theme:"Ninjago" },
+  { set_num:"71775-1", name:"Nyas Samurai X Mech", year:2022, num_parts:1785, theme:"Ninjago" },
+  { set_num:"71785-1", name:"Jays Titan Mech", year:2023, num_parts:794, theme:"Ninjago" },
+  { set_num:"71795-1", name:"Temple of the Dragon Energy Cores", year:2023, num_parts:1029, theme:"Ninjago" },
+  { set_num:"71796-1", name:"Elemental Dragon vs The Empress Mech", year:2023, num_parts:1038, theme:"Ninjago" },
+  { set_num:"71797-1", name:"Destinys Bounty Race Against Time", year:2023, num_parts:1739, theme:"Ninjago" },
+  { set_num:"71799-1", name:"NINJAGO City Markets", year:2023, num_parts:6163, theme:"Ninjago" },
+  { set_num:"31109-1", name:"Pirate Ship", year:2020, num_parts:1264, theme:"Creator" },
+  { set_num:"31120-1", name:"Medieval Castle", year:2021, num_parts:1426, theme:"Creator" },
+  { set_num:"31129-1", name:"Majestic Tiger", year:2022, num_parts:755, theme:"Creator" },
+  { set_num:"31130-1", name:"Sunflowers", year:2022, num_parts:412, theme:"Creator" },
+  { set_num:"31131-1", name:"Downtown Noodle Shop", year:2022, num_parts:569, theme:"Creator" },
+  { set_num:"31132-1", name:"Viking Ship and the Midgard Serpent", year:2022, num_parts:1192, theme:"Creator" },
+  { set_num:"31138-1", name:"Beach Camper Van", year:2023, num_parts:556, theme:"Creator" },
+  { set_num:"31139-1", name:"Cozy House", year:2023, num_parts:808, theme:"Creator" },
+  { set_num:"60271-1", name:"Main Square", year:2020, num_parts:1517, theme:"City" },
+  { set_num:"60292-1", name:"Town Center", year:2021, num_parts:790, theme:"City" },
+  { set_num:"60320-1", name:"Fire Station", year:2022, num_parts:540, theme:"City" },
+  { set_num:"60321-1", name:"Fire Brigade", year:2022, num_parts:766, theme:"City" },
+  { set_num:"60330-1", name:"Hospital", year:2022, num_parts:816, theme:"City" },
+  { set_num:"60335-1", name:"Train Station", year:2022, num_parts:907, theme:"City" },
+  { set_num:"60336-1", name:"Freight Train", year:2022, num_parts:1153, theme:"City" },
+  { set_num:"60337-1", name:"Express Passenger Train", year:2022, num_parts:764, theme:"City" },
+  { set_num:"60350-1", name:"Lunar Research Base", year:2022, num_parts:786, theme:"City" },
+  { set_num:"60351-1", name:"Rocket Launch Centre", year:2022, num_parts:1010, theme:"City" },
+  { set_num:"60365-1", name:"Apartment Building", year:2023, num_parts:688, theme:"City" },
+  { set_num:"60366-1", name:"Ski and Climbing Centre", year:2023, num_parts:1045, theme:"City" },
+  { set_num:"60372-1", name:"Police Training Academy", year:2023, num_parts:823, theme:"City" },
+  { set_num:"60375-1", name:"Fire Station and Fire Engine", year:2023, num_parts:717, theme:"City" },
+  { set_num:"60380-1", name:"Downtown", year:2023, num_parts:2010, theme:"City" },
+  { set_num:"60387-1", name:"4x4 Off-Road Adventure", year:2023, num_parts:911, theme:"City" },
+];
+
+// ─── STATE ───────────────────────────────────────────────────────────────────
+let sets = {};       // { category: [set, ...] }
+let purchased = {};  // { set_num: true }
+let photos = {};     // { set_num: base64 }
+let activeTab = "building";
+let isGifterView = false;
+let showSearch = false;
+let searchResults = [];
+let searchTimer = null;
+let removeTarget = null;
+let photoTarget = null;
+let notifTimer = null;
+
+// ─── SUPABASE ─────────────────────────────────────────────────────────────────
+async function loadFromSupabase() {
+  const [setsRes, purchasedRes, photosRes] = await Promise.all([
+    db.from('sets').select('*'),
+    db.from('purchased').select('*'),
+    db.from('photos').select('*'),
+  ]);
+
+  // Build sets object by category
+  sets = {};
+  (setsRes.data || []).forEach(row => {
+    if (!sets[row.category]) sets[row.category] = [];
+    sets[row.category].push({
+      set_num: row.set_num, name: row.name,
+      year: row.year, num_parts: row.num_parts, theme: row.theme,
+    });
+  });
+
+  purchased = {};
+  (purchasedRes.data || []).forEach(row => { purchased[row.set_num] = true; });
+
+  photos = {};
+  (photosRes.data || []).forEach(row => { photos[row.set_num] = row.data; });
+}
+
+async function dbAddSet(set, category) {
+  await db.from('sets').upsert({
+    set_num: set.set_num, name: set.name, year: set.year,
+    num_parts: set.num_parts, theme: set.theme, category,
+  }, { onConflict: 'set_num,category' });
+}
+
+async function dbRemoveSet(setNum, category) {
+  await db.from('sets').delete().eq('set_num', setNum).eq('category', category);
+}
+
+async function dbMoveSet(set, from, to) {
+  await db.from('sets').update({ category: to }).eq('set_num', set.set_num).eq('category', from);
+}
+
+async function dbMarkPurchased(setNum) {
+  await db.from('purchased').upsert({ set_num: setNum });
+}
+
+async function dbSavePhoto(setNum, dataUrl) {
+  await db.from('photos').upsert({ set_num: setNum, data: dataUrl });
+}
+
+async function dbDeletePhoto(setNum) {
+  await db.from('photos').delete().eq('set_num', setNum);
+}
+
+// ─── HELPERS ─────────────────────────────────────────────────────────────────
+function cat() { return CATEGORIES.find(c => c.id === (isGifterView ? "wishlist" : activeTab)); }
+function currentSets() { return sets[isGifterView ? "wishlist" : activeTab] || []; }
+function ownedCount() { return OWNED_CATEGORIES.reduce((a, id) => a + (sets[id]?.length || 0), 0); }
+function ownedPieces() { return OWNED_CATEGORIES.reduce((a, id) => a + (sets[id] || []).reduce((s, x) => s + (x.num_parts || 0), 0), 0); }
+function wishlistCount() { return sets["wishlist"]?.length || 0; }
+
+function notify(msg) {
+  const el = document.getElementById("notification");
+  el.textContent = msg; el.style.display = "block";
+  clearTimeout(notifTimer);
+  notifTimer = setTimeout(() => { el.style.display = "none"; }, 2800);
+}
+
+function searchLegoSets(query) {
+  if (!query || query.length < 2) return [];
+  const q = query.toLowerCase();
+  return LEGO_DB.filter(s =>
+    s.name.toLowerCase().includes(q) || s.theme.toLowerCase().includes(q) ||
+    s.set_num.toLowerCase().includes(q) || String(s.year).includes(q)
+  ).slice(0, 8);
+}
+
+// ─── RENDER ───────────────────────────────────────────────────────────────────
+function render() {
+  const c = cat();
+
+  document.getElementById("stat-owned").textContent = ownedCount();
+  document.getElementById("stat-pieces").textContent = ownedPieces().toLocaleString();
+  document.getElementById("stat-wishlist").textContent = wishlistCount();
+
+  // Tabs
+  const tabsEl = document.getElementById("tabs");
+  tabsEl.innerHTML = "";
+  CATEGORIES.forEach(cat => {
+    const count = (sets[cat.id] || []).length;
+    const active = activeTab === cat.id && !isGifterView;
+    const btn = document.createElement("button");
+    btn.className = "tab-btn";
+    btn.style.cssText = `border:2px solid ${active ? cat.color : cat.border};background:${active ? `linear-gradient(135deg,${cat.color},${cat.color}cc)` : cat.soft};color:${active ? "#fff" : cat.text};box-shadow:${active ? `0 6px 20px ${cat.color}66` : "0 2px 6px rgba(0,0,0,0.04)"};transform:${active ? "translateY(-2px)" : "none"};`;
+    btn.innerHTML = `<span class="tab-icon">${cat.icon}</span><span class="tab-label">${cat.label}</span><span class="tab-count" style="background:${active ? "rgba(255,255,255,0.3)" : cat.color+"33"};color:${active ? "#fff" : cat.text}">${count}</span>`;
+    btn.onclick = () => { activeTab = cat.id; isGifterView = false; showSearch = false; render(); };
+    tabsEl.appendChild(btn);
+  });
+
+  document.getElementById("gifter-btn-wrap").style.display = (activeTab === "wishlist" && !isGifterView) ? "block" : "none";
+  document.getElementById("gifter-banner").style.display = isGifterView ? "flex" : "none";
+
+  document.getElementById("cat-title").textContent = (c?.icon || "") + " " + (isGifterView ? "Wishlist" : c?.label || "");
+  document.getElementById("cat-title").style.color = c?.text || "#b03060";
+  const cs = currentSets();
+  document.getElementById("cat-meta").textContent = `${cs.length} sets · ${cs.reduce((s,x)=>s+(x.num_parts||0),0).toLocaleString()} pcs`;
+
+  const addBtn = document.getElementById("add-set-btn");
+  if (isGifterView) {
+    addBtn.style.display = "none";
+  } else {
+    addBtn.style.display = "";
+    addBtn.textContent = showSearch ? "✕ Close" : "＋ Add Set";
+    addBtn.style.cssText = showSearch
+      ? "padding:8px 18px;border-radius:20px;background:#f5eef2;color:#c080a0;border:1.5px solid #f0d0e0;font-weight:700;font-size:13px;"
+      : `padding:8px 18px;border-radius:20px;background:linear-gradient(135deg,${c?.color},${c?.color}bb);color:#fff;font-weight:700;font-size:13px;border:none;box-shadow:0 4px 14px ${c?.color}55;`;
+  }
+
+  const sp = document.getElementById("search-panel");
+  sp.style.display = showSearch && !isGifterView ? "block" : "none";
+  if (c) {
+    sp.style.border = `2px solid ${c.border}`;
+    document.getElementById("search-input").style.borderColor = c.border;
+    document.getElementById("search-input").style.background = c.soft;
+    document.getElementById("search-label").style.color = c.text;
+  }
+
+  const srg = document.getElementById("search-results-grid");
+  srg.innerHTML = "";
+  searchResults.forEach(set => {
+    const t = getTheme(set.theme);
+    const card = document.createElement("div");
+    card.className = "search-card";
+    card.style.cssText = `background:${c?.soft};border:1.5px solid ${c?.border};`;
+    card.innerHTML = `
+      <div class="search-tile" style="background:${t.bg}">
+        <div style="font-size:32px">${t.icon}</div>
+        <div style="font-size:9px;font-weight:700;color:${t.accent};text-align:center;padding:0 6px">${set.set_num}</div>
+      </div>
+      <div class="search-card-name">${set.name}</div>
+      <div class="search-card-meta">#${set.set_num} · ${set.year} · ${(set.num_parts||0).toLocaleString()} pcs · ${set.theme}</div>
+      <button class="search-add-btn" style="background:linear-gradient(135deg,${c?.color},${c?.color}bb)">Add ✨</button>`;
+    card.querySelector(".search-add-btn").onclick = () => addSet(set);
+    srg.appendChild(card);
+  });
+
+  // Sets grid
+  const grid = document.getElementById("sets-grid");
+  const empty = document.getElementById("empty-state");
+  grid.innerHTML = "";
+
+  if (cs.length === 0) {
+    empty.style.display = "block"; grid.style.display = "none";
+    document.getElementById("empty-icon").textContent = isGifterView ? "⭐" : (c?.icon || "📦");
+    document.getElementById("empty-sub").style.display = isGifterView ? "none" : "block";
+  } else {
+    empty.style.display = "none"; grid.style.display = "grid";
+    cs.forEach(set => {
+      const t = getTheme(set.theme);
+      const photo = photos[set.set_num];
+      const isPurchased = purchased[set.set_num];
+      const isOwnedTab = OWNED_CATEGORIES.includes(activeTab);
+
+      if (isGifterView) {
+        const card = document.createElement("div");
+        card.className = "gifter-card";
+        card.style.border = `2px solid ${isPurchased ? "#F9C8DA" : "#F4A7C3"}`;
+        card.style.opacity = isPurchased ? "0.7" : "1";
+        const tileHtml = photo
+          ? `<div class="gifter-tile" style="background:${t.bg}"><img src="${photo}" alt="${set.name}"></div>`
+          : `<div class="gifter-tile" style="background:${t.bg}"><div class="gifter-tile-icon" style="font-size:36px">${t.icon}</div><div class="gifter-tile-num" style="font-size:10px;font-weight:700;color:${t.accent}">${set.set_num}</div></div>`;
+        card.innerHTML = tileHtml + `
+          <div class="set-card-name">${set.name}</div>
+          <div class="set-card-sub">#${set.set_num} · ${set.year}</div>
+          ${isPurchased
+            ? `<div style="margin-top:10px;padding:6px;border-radius:10px;background:#FFF0F6;color:#C25080;font-weight:700;font-size:12px;text-align:center">✅ Purchased!</div>`
+            : `<button style="margin-top:10px;width:100%;padding:8px;border-radius:12px;background:linear-gradient(135deg,#F9AABF,#F47090);color:#fff;font-weight:700;font-size:12px;border:none" data-mark="${set.set_num}">🎁 Mark Purchased</button>`}`;
+        if (!isPurchased) card.querySelector("[data-mark]").onclick = async () => {
+          purchased[set.set_num] = true;
+          await dbMarkPurchased(set.set_num);
+          notify("Marked as purchased! 🎁"); render();
+        };
+        grid.appendChild(card);
+        return;
+      }
+
+      const moveTargets = isOwnedTab
+        ? CATEGORIES.filter(mc => mc.id !== activeTab && mc.id !== "wishlist")
+        : CATEGORIES.filter(mc => mc.id !== activeTab);
+
+      const card = document.createElement("div");
+      card.className = "set-card";
+      card.style.border = `2px solid ${c?.border || "#f9d0e0"}`;
+
+      const tileDiv = document.createElement("div");
+      tileDiv.className = "set-tile";
+      tileDiv.style.background = t.bg;
+      if (photo) {
+        const img = document.createElement("img"); img.src = photo; img.alt = set.name;
+        tileDiv.appendChild(img);
+      }
+      const iconEl = document.createElement("div"); iconEl.style.fontSize="40px"; iconEl.style.position="relative"; iconEl.style.zIndex="1"; iconEl.textContent = t.icon; if(photo) iconEl.style.display="none";
+      const numEl = document.createElement("div"); numEl.style.cssText=`font-size:10px;font-weight:700;color:${t.accent};position:relative;z-index:1`; numEl.textContent = set.set_num; if(photo) numEl.style.display="none";
+      const overlay = document.createElement("div"); overlay.className="set-tile-overlay"; overlay.innerHTML=`<span>${photo?"📷 Change":"📷 Add photo"}</span>`;
+      tileDiv.append(iconEl, numEl, overlay);
+      tileDiv.onclick = () => { photoTarget = set.set_num; document.getElementById("photo-input").click(); };
+
+      card.appendChild(tileDiv);
+      const rest = document.createElement("div");
+      rest.innerHTML = `
+        <div class="set-card-name">${set.name}</div>
+        <div class="set-card-sub">#${set.set_num} · ${set.year}</div>
+        ${set.theme ? `<div class="set-theme-badge" style="color:${c?.text};background:${c?.soft};border-color:${c?.border}">${set.theme}</div>` : ""}
+        <div class="set-pieces">🧱 ${(set.num_parts||0).toLocaleString()} pieces</div>
+        <div class="set-actions">
+          ${moveTargets.map(mc=>`<button class="move-btn" title="Move to ${mc.label}" style="background:${mc.soft};border:1.5px solid ${mc.border}" data-move="${mc.id}">${mc.icon}</button>`).join("")}
+          ${photo ? `<button class="photo-del-btn" data-pdel="${set.set_num}">🖼️✕</button>` : ""}
+          <button class="del-btn" data-del="${set.set_num}">🗑️</button>
+        </div>`;
+      rest.querySelectorAll("[data-move]").forEach(btn => btn.onclick = () => moveSet(set, btn.dataset.move));
+      const pdel = rest.querySelector("[data-pdel]");
+      if (pdel) pdel.onclick = async () => { delete photos[set.set_num]; await dbDeletePhoto(set.set_num); notify("Photo removed"); render(); };
+      rest.querySelector("[data-del]").onclick = () => { removeTarget={setNum:set.set_num,name:set.name}; document.getElementById("modal-set-name").textContent=set.name; document.getElementById("modal-overlay").style.display="flex"; };
+      card.appendChild(rest);
+      grid.appendChild(card);
+    });
+  }
+}
+
+// ─── ACTIONS ─────────────────────────────────────────────────────────────────
+async function addSet(set) {
+  const category = activeTab;
+  if (!sets[category]) sets[category] = [];
+  if (!sets[category].find(s => s.set_num === set.set_num)) {
+    sets[category].push(set);
+    await dbAddSet(set, category);
+  }
+  showSearch = false; searchResults = [];
+  document.getElementById("search-input").value = "";
+  notify(`✨ Added "${set.name}"!`); render();
+}
+
+async function moveSet(set, toId) {
+  const from = activeTab;
+  sets[from] = (sets[from] || []).filter(s => s.set_num !== set.set_num);
+  if (!sets[toId]) sets[toId] = [];
+  if (!sets[toId].find(s => s.set_num === set.set_num)) sets[toId].push(set);
+  await dbMoveSet(set, from, toId);
+  notify("Moved to " + CATEGORIES.find(c=>c.id===toId)?.label + " 🌸"); render();
+}
+
+// ─── EVENTS ──────────────────────────────────────────────────────────────────
+document.getElementById("add-set-btn").onclick = () => {
+  showSearch = !showSearch; render();
+  if (showSearch) setTimeout(() => document.getElementById("search-input").focus(), 80);
+};
+
+document.getElementById("search-input").addEventListener("input", e => {
+  clearTimeout(searchTimer);
+  const q = e.target.value.trim();
+  if (!q) { searchResults = []; render(); return; }
+  searchTimer = setTimeout(() => { searchResults = searchLegoSets(q); render(); }, 300);
+});
+
+document.getElementById("gifter-btn").onclick = () => {
+  document.getElementById("gift-mode-panel").style.display = "block";
+  document.getElementById("gift-code-input").value = "";
+  document.getElementById("gift-error").style.display = "none";
+};
+document.getElementById("gift-submit").onclick = () => {
+  if (document.getElementById("gift-code-input").value.trim().toUpperCase() === "GIFTER") {
+    document.getElementById("gift-mode-panel").style.display = "none";
+    isGifterView = true; notify("Gift view unlocked! 🎀"); render();
+  } else {
+    document.getElementById("gift-error").textContent = "Wrong code! Ask the wishlist owner ✨";
+    document.getElementById("gift-error").style.display = "block";
+  }
+};
+document.getElementById("gift-code-input").addEventListener("keydown", e => { if(e.key==="Enter") document.getElementById("gift-submit").click(); });
+document.getElementById("gift-close").onclick = () => { document.getElementById("gift-mode-panel").style.display = "none"; };
+document.getElementById("gifter-exit").onclick = () => { isGifterView = false; activeTab = "wishlist"; render(); };
+
+document.getElementById("modal-confirm").onclick = async () => {
+  if (removeTarget) {
+    sets[activeTab] = (sets[activeTab]||[]).filter(s=>s.set_num!==removeTarget.setNum);
+    await dbRemoveSet(removeTarget.setNum, activeTab);
+    removeTarget = null;
+  }
+  document.getElementById("modal-overlay").style.display = "none"; render();
+};
+document.getElementById("modal-cancel").onclick = () => {
+  removeTarget = null; document.getElementById("modal-overlay").style.display = "none";
+};
+
+document.getElementById("photo-input").addEventListener("change", async e => {
+  const file = e.target.files[0];
+  if (!file || !photoTarget) return;
+  const reader = new FileReader();
+  reader.onload = async ev => {
+    photos[photoTarget] = ev.target.result;
+    await dbSavePhoto(photoTarget, ev.target.result);
+    notify("📸 Photo added!"); render();
+  };
+  reader.readAsDataURL(file);
+  e.target.value = "";
+});
+
+// ─── INIT ─────────────────────────────────────────────────────────────────────
+(async () => {
+  try {
+    await loadFromSupabase();
+  } catch(e) {
+    console.error("Supabase load failed:", e);
+  }
+  document.getElementById("loading-screen").style.display = "none";
+  document.getElementById("app").style.display = "block";
+  render();
+})();
+</script>
+</body>
+</html>
