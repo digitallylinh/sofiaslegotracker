@@ -531,6 +531,9 @@ async function loadFromSupabase() {
     db.from('purchased').select('*'),
     db.from('photos').select('*'),
   ]);
+  if (setsRes.error) console.error('Load sets error:', setsRes.error.message);
+  if (purchasedRes.error) console.error('Load purchased error:', purchasedRes.error.message);
+  if (photosRes.error) console.error('Load photos error:', photosRes.error.message);
 
   // Build sets object by category
   sets = {};
@@ -550,10 +553,13 @@ async function loadFromSupabase() {
 }
 
 async function dbAddSet(set, category) {
-  await db.from('sets').upsert({
+  // First delete any existing row for this set+category, then insert fresh
+  await db.from('sets').delete().eq('set_num', set.set_num).eq('category', category);
+  const { error } = await db.from('sets').insert({
     set_num: set.set_num, name: set.name, year: set.year,
     num_parts: set.num_parts, theme: set.theme, category,
-  }, { onConflict: 'set_num,category' });
+  });
+  if (error) console.error('dbAddSet error:', error.message, error.details);
 }
 
 async function dbRemoveSet(setNum, category) {
@@ -565,11 +571,15 @@ async function dbMoveSet(set, from, to) {
 }
 
 async function dbMarkPurchased(setNum) {
-  await db.from('purchased').upsert({ set_num: setNum });
+  await db.from('purchased').delete().eq('set_num', setNum);
+  const { error } = await db.from('purchased').insert({ set_num: setNum });
+  if (error) console.error('dbMarkPurchased error:', error.message);
 }
 
 async function dbSavePhoto(setNum, dataUrl) {
-  await db.from('photos').upsert({ set_num: setNum, data: dataUrl });
+  await db.from('photos').delete().eq('set_num', setNum);
+  const { error } = await db.from('photos').insert({ set_num: setNum, data: dataUrl });
+  if (error) console.error('dbSavePhoto error:', error.message);
 }
 
 async function dbDeletePhoto(setNum) {
