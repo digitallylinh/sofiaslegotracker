@@ -137,6 +137,18 @@
   .del-btn { padding: 5px 8px; border-radius: 10px; font-size: 16px; line-height: 1; margin-left: auto; background: #fff0f4; border: 1.5px solid #f9c8da !important; }
   .photo-del-btn { padding: 5px 8px; border-radius: 10px; font-size: 14px; line-height: 1; background: #fff0f4; border: 1.5px solid #f9c8da !important; }
 
+  /* MANUAL ADD */
+  #panel-tabs { display: flex; gap: 8px; margin-bottom: 12px; }
+  .panel-tab { flex: 1; padding: 8px; border-radius: 12px; font-weight: 700; font-size: 12px; border: 2px solid #F9C8DA; background: #FFF5F9; color: #C25080; cursor: pointer; }
+  .panel-tab.active { background: linear-gradient(135deg, #F48BAD, #F47090); color: #fff; border-color: transparent; }
+  #manual-panel { display: none; }
+  #manual-panel input, #manual-panel select {
+    width: 100%; padding: 10px 14px; border-radius: 12px; border: 2px solid #F9C8DA;
+    background: #FFF5F9; font-family: inherit; font-size: 13px; margin-bottom: 8px;
+  }
+  #manual-panel label { font-size: 11px; font-weight: 700; color: #C25080; display: block; margin-bottom: 3px; }
+  #manual-form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 0 10px; }
+
   .gifter-card { background: #fff; border-radius: 20px; padding: 14px; box-shadow: 0 3px 14px rgba(240,100,140,0.07); }
   .gifter-tile { border-radius: 12px; height: 110px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 6px; margin-bottom: 10px; overflow: hidden; position: relative; }
   .gifter-tile img { width: 100%; height: 100%; object-fit: cover; position: absolute; inset: 0; }
@@ -205,9 +217,73 @@
     </div>
 
     <div id="search-panel">
-      <div id="search-label" style="font-weight:700;font-size:14px;margin-bottom:10px;">🔍 Search LEGO sets</div>
-      <input id="search-input" placeholder="e.g. Flower Bouquet, 10280, Friends…" />
-      <div id="search-results-grid"></div>
+      <div id="panel-tabs">
+        <button class="panel-tab active" id="tab-search" onclick="switchPanelTab('search')">🔍 Search</button>
+        <button class="panel-tab" id="tab-manual" onclick="switchPanelTab('manual')">✏️ Add Manually</button>
+      </div>
+
+      <!-- Search tab -->
+      <div id="search-tab-content">
+        <div id="search-label" style="font-weight:700;font-size:14px;margin-bottom:10px;">🔍 Search LEGO sets</div>
+        <input id="search-input" placeholder="e.g. Flower Bouquet, 10280, Animal Crossing…" />
+        <div id="search-results-grid"></div>
+      </div>
+
+      <!-- Manual tab -->
+      <div id="manual-panel">
+        <div id="manual-form-grid">
+          <div style="grid-column:1/-1">
+            <label>Set Name *</label>
+            <input id="manual-name" placeholder="e.g. Nook's Cranny" />
+          </div>
+          <div>
+            <label>Brand</label>
+            <input id="manual-brand" placeholder="e.g. LEGO, Mega…" list="brand-suggestions" />
+            <datalist id="brand-suggestions">
+              <option value="LEGO">
+              <option value="Mega Construx">
+              <option value="Mega Bloks">
+              <option value="Cobi">
+              <option value="Nanoblock">
+              <option value="Oxford">
+              <option value="Funko Snaps">
+              <option value="K'Nex">
+              <option value="Other">
+            </datalist>
+          </div>
+          <div>
+            <label>Set Number</label>
+            <input id="manual-set-num" placeholder="e.g. 77049 (optional)" />
+          </div>
+          <div>
+            <label>Year</label>
+            <input id="manual-year" type="number" placeholder="2024" min="1950" max="2030" />
+          </div>
+          <div>
+            <label>Piece Count</label>
+            <input id="manual-parts" type="number" placeholder="0" min="0" />
+          </div>
+          <div>
+            <label>Theme</label>
+            <input id="manual-theme" placeholder="e.g. Animal Crossing" list="theme-suggestions" />
+            <datalist id="theme-suggestions">
+              <option value="Icons"><option value="Star Wars"><option value="Technic">
+              <option value="Ideas"><option value="Friends"><option value="Harry Potter">
+              <option value="DC"><option value="Marvel"><option value="Disney">
+              <option value="Ninjago"><option value="Creator"><option value="City">
+              <option value="Animal Crossing"><option value="One Piece"><option value="Minecraft">
+              <option value="Speed Champions"><option value="Duplo"><option value="Architecture">
+              <option value="BrickHeadz"><option value="Monkie Kid"><option value="Dreamzzz">
+              <option value="Super Mario"><option value="Sonic the Hedgehog"><option value="Avatar">
+              <option value="Indiana Jones"><option value="Jurassic World"><option value="Bluey">
+            </datalist>
+          </div>
+        </div>
+        <div id="manual-error" style="color:#c03060;font-size:12px;margin-bottom:8px;display:none;"></div>
+        <button id="manual-add-btn" style="width:100%;padding:10px;border-radius:14px;background:linear-gradient(135deg,#F48BAD,#F06090);color:#fff;font-weight:700;font-size:13px;border:none;cursor:pointer;">
+          Add Set ✨
+        </button>
+      </div>
     </div>
 
     <div id="empty-state">
@@ -734,6 +810,7 @@ async function loadFromSupabase() {
     sets[row.category].push({
       set_num: row.set_num, name: row.name,
       year: row.year, num_parts: row.num_parts, theme: row.theme,
+      brand: row.brand || 'LEGO',
     });
   });
 
@@ -750,6 +827,7 @@ async function dbAddSet(set, category) {
   const { error } = await db.from('sets').insert({
     set_num: set.set_num, name: set.name, year: set.year,
     num_parts: set.num_parts, theme: set.theme, category,
+    brand: set.brand || 'LEGO',
   });
   if (error) console.error('dbAddSet error:', error.message, error.details);
 }
@@ -799,7 +877,11 @@ async function searchLegoSets(query) {
   try {
     const res = await fetch(EDGE_FN_URL, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${SUPABASE_KEY}`,
+        'apikey': SUPABASE_KEY,
+      },
       body: JSON.stringify({ query }),
     });
     if (!res.ok) throw new Error('Edge function error ' + res.status);
@@ -822,6 +904,16 @@ async function searchLegoSets(query) {
       s.set_num.toLowerCase().includes(q) || String(s.year).includes(q)
     ).slice(0, 8);
   }
+}
+
+// ─── PANEL TAB SWITCHER ──────────────────────────────────────────────────────
+function switchPanelTab(tab) {
+  const isSearch = tab === 'search';
+  document.getElementById('tab-search').className = 'panel-tab' + (isSearch ? ' active' : '');
+  document.getElementById('tab-manual').className = 'panel-tab' + (!isSearch ? ' active' : '');
+  document.getElementById('search-tab-content').style.display = isSearch ? 'block' : 'none';
+  document.getElementById('manual-panel').style.display = isSearch ? 'none' : 'block';
+  if (!isSearch) setTimeout(() => document.getElementById('manual-set-num').focus(), 80);
 }
 
 // ─── RENDER ───────────────────────────────────────────────────────────────────
@@ -920,7 +1012,7 @@ function render() {
           : `<div class="gifter-tile" style="background:${t.bg}"><div class="gifter-tile-icon" style="font-size:36px">${t.icon}</div><div class="gifter-tile-num" style="font-size:10px;font-weight:700;color:${t.accent}">${set.set_num}</div></div>`;
         card.innerHTML = tileHtml + `
           <div class="set-card-name">${set.name}</div>
-          <div class="set-card-sub">#${set.set_num} · ${set.year}</div>
+          <div class="set-card-sub">${set.brand && set.brand !== "LEGO" ? set.brand + " · " : ""}${set.set_num.startsWith("manual-") ? "" : "#" + set.set_num + " · "}${set.year}</div>
           ${isPurchased
             ? `<div style="margin-top:10px;padding:6px;border-radius:10px;background:#FFF0F6;color:#C25080;font-weight:700;font-size:12px;text-align:center">✅ Purchased!</div>`
             : `<button style="margin-top:10px;width:100%;padding:8px;border-radius:12px;background:linear-gradient(135deg,#F9AABF,#F47090);color:#fff;font-weight:700;font-size:12px;border:none" data-mark="${set.set_num}">🎁 Mark Purchased</button>`}`;
@@ -958,7 +1050,7 @@ function render() {
       const rest = document.createElement("div");
       rest.innerHTML = `
         <div class="set-card-name">${set.name}</div>
-        <div class="set-card-sub">#${set.set_num} · ${set.year}</div>
+        <div class="set-card-sub">${set.brand && set.brand !== "LEGO" ? set.brand + " · " : ""}${set.set_num.startsWith("manual-") ? "" : "#" + set.set_num + " · "}${set.year}</div>
         ${set.theme ? `<div class="set-theme-badge" style="color:${c?.text};background:${c?.soft};border-color:${c?.border}">${getThemeName(set.theme)}</div>` : ""}
         <div class="set-pieces">🧱 ${(set.num_parts||0).toLocaleString()} pieces</div>
         <div class="set-actions">
@@ -1045,6 +1137,46 @@ document.getElementById("modal-confirm").onclick = async () => {
 document.getElementById("modal-cancel").onclick = () => {
   removeTarget = null; document.getElementById("modal-overlay").style.display = "none";
 };
+
+document.getElementById("manual-add-btn").onclick = async () => {
+  const name   = document.getElementById("manual-name").value.trim();
+  const brand  = document.getElementById("manual-brand").value.trim() || "LEGO";
+  const setNum = document.getElementById("manual-set-num").value.trim();
+  const year   = parseInt(document.getElementById("manual-year").value) || new Date().getFullYear();
+  const parts  = parseInt(document.getElementById("manual-parts").value) || 0;
+  const theme  = document.getElementById("manual-theme").value.trim() || brand;
+  const errEl  = document.getElementById("manual-error");
+
+  if (!name) {
+    errEl.textContent = "Set name is required ✨";
+    errEl.style.display = "block";
+    return;
+  }
+  errEl.style.display = "none";
+
+  // Use provided set number or generate a unique ID
+  const normalizedNum = setNum
+    ? (setNum.includes('-') ? setNum : setNum + '-1')
+    : 'manual-' + Date.now();
+
+  const set = { set_num: normalizedNum, name, year, num_parts: parts, theme, brand };
+  await addSet(set);
+
+  // Clear form
+  document.getElementById("manual-name").value = "";
+  document.getElementById("manual-brand").value = "";
+  document.getElementById("manual-set-num").value = "";
+  document.getElementById("manual-year").value = "";
+  document.getElementById("manual-parts").value = "";
+  document.getElementById("manual-theme").value = "";
+};
+
+// Allow Enter key in manual form
+["manual-name","manual-brand","manual-set-num","manual-year","manual-parts","manual-theme"].forEach(id => {
+  document.getElementById(id).addEventListener("keydown", e => {
+    if (e.key === "Enter") document.getElementById("manual-add-btn").click();
+  });
+});
 
 document.getElementById("photo-input").addEventListener("change", async e => {
   const file = e.target.files[0];
