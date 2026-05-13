@@ -275,7 +275,16 @@ const REBRICKABLE_THEME_IDS = {
   158:"Icons", 171:"Star Wars", 1:"Technic", 373:"Ideas", 246:"Friends",
   409:"Harry Potter", 155:"DC", 154:"Marvel", 652:"Disney", 76:"Ninjago",
   22:"Creator", 52:"City", 67:"Duplo", 577:"Minecraft", 392:"Speed Champions",
-  408:"Architecture", 694:"Art", 158:"Botanical",
+  408:"Architecture", 694:"Art", 752:"Animal Crossing", 759:"One Piece",
+  598:"Sonic the Hedgehog", 196:"BrickHeadz", 598:"Sonic", 504:"Overwatch",
+  687:"Avatar", 697:"Dreamzzz", 700:"Fortnite", 706:"Lilo and Stitch",
+  745:"Wicked", 748:"Horizon", 501:"Trolls", 626:"Monkie Kid",
+  435:"Hidden Side", 561:"Vidiyo", 326:"The LEGO Movie", 
+  246:"Friends", 199:"Pirates of the Caribbean", 737:"Gabby's Dollhouse",
+  738:"Bluey", 741:"Stranger Things", 143:"Batman", 45:"Pirates",
+  186:"Castle", 209:"Space", 238:"Train", 494:"The Simpsons",
+  495:"Ghostbusters", 497:"Jurassic World", 560:"Trolls",
+  573:"Super Mario", 591:"Super Heroes", 613:"Elf", 621:"Indiana Jones",
 };
 const getThemeName = t => {
   if (!t) return "LEGO";
@@ -801,7 +810,8 @@ async function searchLegoSets(query) {
       name: s.name,
       year: s.year,
       num_parts: s.num_parts || 0,
-      theme: s.theme_id ? String(s.theme_id) : 'LEGO',
+      theme: s.theme_name || (s.theme_id ? String(s.theme_id) : 'LEGO'),
+      img: s.set_img_url || null,
     }));
   } catch(e) {
     console.warn('Rebrickable search failed, falling back to local DB:', e.message);
