@@ -251,20 +251,42 @@ const CATEGORIES = [
 const OWNED_CATEGORIES = ["building","to_build","completed"];
 
 const THEME_COLORS = {
-  "Icons":       { bg:"#FFF0F6", accent:"#F48BAD", icon:"🏛️" },
-  "Star Wars":   { bg:"#1a1a2e", accent:"#FFD700", icon:"⭐" },
-  "Technic":     { bg:"#1a1a1a", accent:"#E3000B", icon:"⚙️" },
-  "Ideas":       { bg:"#E8F4FD", accent:"#2196F3", icon:"💡" },
-  "Friends":     { bg:"#FFF0F9", accent:"#FF69B4", icon:"💖" },
-  "Harry Potter":{ bg:"#1a0a2e", accent:"#C9A84C", icon:"⚡" },
-  "DC":          { bg:"#0D0D2B", accent:"#1E90FF", icon:"🦇" },
-  "Marvel":      { bg:"#8B0000", accent:"#FFD700", icon:"🕷️" },
-  "Disney":      { bg:"#FFF5E6", accent:"#FF8C00", icon:"✨" },
-  "Ninjago":     { bg:"#1a1a1a", accent:"#FF4500", icon:"🐉" },
-  "Creator":     { bg:"#F0FFF0", accent:"#228B22", icon:"🧩" },
-  "City":        { bg:"#E8F5FF", accent:"#1565C0", icon:"🏙️" },
+  "Icons":        { bg:"#FFF0F6", accent:"#F48BAD", icon:"🏛️" },
+  "Star Wars":    { bg:"#1a1a2e", accent:"#FFD700", icon:"⭐" },
+  "Technic":      { bg:"#1a1a1a", accent:"#E3000B", icon:"⚙️" },
+  "Ideas":        { bg:"#E8F4FD", accent:"#2196F3", icon:"💡" },
+  "Friends":      { bg:"#FFF0F9", accent:"#FF69B4", icon:"💖" },
+  "Harry Potter": { bg:"#1a0a2e", accent:"#C9A84C", icon:"⚡" },
+  "DC":           { bg:"#0D0D2B", accent:"#1E90FF", icon:"🦇" },
+  "Marvel":       { bg:"#8B0000", accent:"#FFD700", icon:"🕷️" },
+  "Disney":       { bg:"#FFF5E6", accent:"#FF8C00", icon:"✨" },
+  "Ninjago":      { bg:"#1a1a1a", accent:"#FF4500", icon:"🐉" },
+  "Creator":      { bg:"#F0FFF0", accent:"#228B22", icon:"🧩" },
+  "City":         { bg:"#E8F5FF", accent:"#1565C0", icon:"🏙️" },
+  "Duplo":        { bg:"#FFF9E6", accent:"#FFA500", icon:"🔶" },
+  "Minecraft":    { bg:"#E8FFE8", accent:"#5D8A3C", icon:"⛏️" },
+  "Speed Champions":{ bg:"#F0F0FF", accent:"#6600CC", icon:"🏎️" },
+  "Architecture": { bg:"#F5F5F5", accent:"#333333", icon:"🏢" },
+  "Art":          { bg:"#FFF0FF", accent:"#CC00CC", icon:"🎨" },
+  "Botanical":    { bg:"#F0FFF0", accent:"#228B22", icon:"🌿" },
 };
-const getTheme = t => THEME_COLORS[t] || { bg:"#FFF0F6", accent:"#F48BAD", icon:"🧱" };
+// Rebrickable returns numeric theme IDs — map the most common ones
+const REBRICKABLE_THEME_IDS = {
+  158:"Icons", 171:"Star Wars", 1:"Technic", 373:"Ideas", 246:"Friends",
+  409:"Harry Potter", 155:"DC", 154:"Marvel", 652:"Disney", 76:"Ninjago",
+  22:"Creator", 52:"City", 67:"Duplo", 577:"Minecraft", 392:"Speed Champions",
+  408:"Architecture", 694:"Art", 158:"Botanical",
+};
+const getThemeName = t => {
+  if (!t) return "LEGO";
+  // If numeric, look up name
+  if (!isNaN(t)) return REBRICKABLE_THEME_IDS[Number(t)] || "LEGO";
+  return t;
+};
+const getTheme = t => {
+  const name = getThemeName(t);
+  return THEME_COLORS[name] || { bg:"#FFF0F6", accent:"#F48BAD", icon:"🧱" };
+};
 
 const LEGO_DB = [
   { set_num:"10280-1", name:"Flower Bouquet", year:2021, num_parts:756, theme:"Icons" },
@@ -509,6 +531,167 @@ const LEGO_DB = [
   { set_num:"60375-1", name:"Fire Station and Fire Engine", year:2023, num_parts:717, theme:"City" },
   { set_num:"60380-1", name:"Downtown", year:2023, num_parts:2010, theme:"City" },
   { set_num:"60387-1", name:"4x4 Off-Road Adventure", year:2023, num_parts:911, theme:"City" },
+  // 2024-2025 Icons
+  { set_num:"10349-1", name:"Happy Plants", year:2025, num_parts:1017, theme:"Icons" },
+  { set_num:"10332-1", name:"Medieval Town Square", year:2024, num_parts:3304, theme:"Icons" },
+  { set_num:"10333-1", name:"The Lord of the Rings: Bag End", year:2024, num_parts:2923, theme:"Icons" },
+  { set_num:"10334-1", name:"Jazz Club", year:2024, num_parts:2899, theme:"Icons" },
+  { set_num:"10335-1", name:"The White House", year:2024, num_parts:2710, theme:"Icons" },
+  { set_num:"10336-1", name:"World of Dinosaurs", year:2024, num_parts:4097, theme:"Icons" },
+  { set_num:"10337-1", name:"Coastal Lighthouse", year:2024, num_parts:2065, theme:"Icons" },
+  { set_num:"10338-1", name:"Daffodils", year:2024, num_parts:216, theme:"Icons" },
+  { set_num:"10339-1", name:"Rosy", year:2024, num_parts:359, theme:"Icons" },
+  { set_num:"10340-1", name:"Botanical Art", year:2024, num_parts:899, theme:"Icons" },
+  { set_num:"10341-1", name:"Our Earth", year:2024, num_parts:3552, theme:"Icons" },
+  { set_num:"10342-1", name:"Insects Collection", year:2024, num_parts:420, theme:"Icons" },
+  { set_num:"10343-1", name:"Cherry Blossoms", year:2024, num_parts:693, theme:"Icons" },
+  { set_num:"10344-1", name:"Seaside Lighthouse Diorama", year:2024, num_parts:896, theme:"Icons" },
+  { set_num:"10345-1", name:"Big Ben", year:2024, num_parts:4295, theme:"Icons" },
+  { set_num:"10346-1", name:"Cozy Home", year:2025, num_parts:1617, theme:"Icons" },
+  { set_num:"10347-1", name:"Sunflowers", year:2025, num_parts:387, theme:"Icons" },
+  { set_num:"10348-1", name:"The Rolling Stones", year:2025, num_parts:3504, theme:"Icons" },
+  { set_num:"10350-1", name:"Bouquet of Pansies and Daisies", year:2025, num_parts:320, theme:"Icons" },
+  // 2024-2025 Star Wars
+  { set_num:"75383-1", name:"Darth Maul's Sith Infiltrator", year:2024, num_parts:1108, theme:"Star Wars" },
+  { set_num:"75384-1", name:"The Crimson Firehawk", year:2024, num_parts:1179, theme:"Star Wars" },
+  { set_num:"75385-1", name:"Ahsoka Tano's T-6 Jedi Shuttle", year:2024, num_parts:601, theme:"Star Wars" },
+  { set_num:"75386-1", name:"Pirate Snub Fighter", year:2024, num_parts:285, theme:"Star Wars" },
+  { set_num:"75387-1", name:"Boarding the Tantive IV", year:2024, num_parts:682, theme:"Star Wars" },
+  { set_num:"75388-1", name:"Hoth AT-AT Walker", year:2024, num_parts:1082, theme:"Star Wars" },
+  { set_num:"75389-1", name:"Dark Falcon", year:2024, num_parts:1579, theme:"Star Wars" },
+  { set_num:"75390-1", name:"Luke Skywalkers Red Five X-Wing", year:2024, num_parts:1953, theme:"Star Wars" },
+  { set_num:"75391-1", name:"Captain Rex Y-Wing Microfighter", year:2024, num_parts:99, theme:"Star Wars" },
+  { set_num:"75392-1", name:"Yodas Jedi Starfighter", year:2024, num_parts:253, theme:"Star Wars" },
+  { set_num:"75393-1", name:"Death Star: The Final Duel", year:2024, num_parts:724, theme:"Star Wars" },
+  { set_num:"75394-1", name:"Endor AT-ST Raider", year:2024, num_parts:650, theme:"Star Wars" },
+  { set_num:"75395-1", name:"Hogwarts Express", year:2024, num_parts:726, theme:"Star Wars" },
+  { set_num:"75396-1", name:"Desert Skiff Escape", year:2024, num_parts:534, theme:"Star Wars" },
+  { set_num:"75397-1", name:"Pirate Tank", year:2024, num_parts:652, theme:"Star Wars" },
+  { set_num:"75398-1", name:"Ghost Starship", year:2024, num_parts:1394, theme:"Star Wars" },
+  { set_num:"75399-1", name:"Millennium Falcon", year:2025, num_parts:718, theme:"Star Wars" },
+  { set_num:"75400-1", name:"Clone Turbo Tank", year:2025, num_parts:1275, theme:"Star Wars" },
+  { set_num:"75401-1", name:"Jedi Bob Starfighter", year:2025, num_parts:197, theme:"Star Wars" },
+  // 2024-2025 Ideas
+  { set_num:"21351-1", name:"Bluey's Family Home", year:2025, num_parts:1573, theme:"Ideas" },
+  { set_num:"21352-1", name:"WALL-E", year:2024, num_parts:1078, theme:"Ideas" },
+  { set_num:"21353-1", name:"Minecraft Pig House", year:2024, num_parts:534, theme:"Ideas" },
+  { set_num:"21354-1", name:"The Little Mermaid", year:2025, num_parts:1177, theme:"Ideas" },
+  { set_num:"21355-1", name:"Motorized Lighthouse", year:2025, num_parts:2065, theme:"Ideas" },
+  // 2024-2025 Friends
+  { set_num:"41759-1", name:"Mia's Wildlife Rescue", year:2024, num_parts:430, theme:"Friends" },
+  { set_num:"41760-1", name:"Igloo Holiday Adventure", year:2024, num_parts:491, theme:"Friends" },
+  { set_num:"41761-1", name:"Heartlake City School", year:2024, num_parts:696, theme:"Friends" },
+  { set_num:"41762-1", name:"Dog Rescue Van", year:2024, num_parts:344, theme:"Friends" },
+  { set_num:"41763-1", name:"Horse Stable and Pony Care", year:2024, num_parts:545, theme:"Friends" },
+  { set_num:"41764-1", name:"Ice Skating Rink", year:2024, num_parts:397, theme:"Friends" },
+  { set_num:"41765-1", name:"Tiny Camper Van", year:2024, num_parts:204, theme:"Friends" },
+  { set_num:"41766-1", name:"Heartlake City Café", year:2024, num_parts:426, theme:"Friends" },
+  { set_num:"41767-1", name:"Animal Hospital", year:2024, num_parts:713, theme:"Friends" },
+  { set_num:"41768-1", name:"Olivia's Beach Glamping", year:2024, num_parts:364, theme:"Friends" },
+  { set_num:"41769-1", name:"Amusement Park Roller Coaster", year:2024, num_parts:1915, theme:"Friends" },
+  { set_num:"41770-1", name:"Autumn in the Heartlake City Park", year:2024, num_parts:545, theme:"Friends" },
+  { set_num:"41771-1", name:"Liann's Pop Music Video", year:2024, num_parts:620, theme:"Friends" },
+  { set_num:"41772-1", name:"Friendship Box", year:2024, num_parts:1431, theme:"Friends" },
+  { set_num:"41773-1", name:"Hairdresser and Makeup Artist", year:2024, num_parts:401, theme:"Friends" },
+  { set_num:"41774-1", name:"Heartlake City Mall", year:2025, num_parts:1682, theme:"Friends" },
+  // 2024-2025 Harry Potter
+  { set_num:"76423-1", name:"Hogwarts Express and Hogsmeade Station", year:2024, num_parts:1074, theme:"Harry Potter" },
+  { set_num:"76424-1", name:"Flying Ford Anglia", year:2024, num_parts:165, theme:"Harry Potter" },
+  { set_num:"76425-1", name:"Hedwig at 4 Privet Drive", year:2024, num_parts:337, theme:"Harry Potter" },
+  { set_num:"76426-1", name:"Hogwarts Boathouse", year:2024, num_parts:490, theme:"Harry Potter" },
+  { set_num:"76427-1", name:"Gringotts Vault", year:2024, num_parts:432, theme:"Harry Potter" },
+  { set_num:"76428-1", name:"Hagrids Hut Magical Creatures", year:2024, num_parts:896, theme:"Harry Potter" },
+  { set_num:"76429-1", name:"The Sorting Hat", year:2024, num_parts:1645, theme:"Harry Potter" },
+  { set_num:"76430-1", name:"Hogwarts Owlery", year:2024, num_parts:364, theme:"Harry Potter" },
+  { set_num:"76431-1", name:"Hogwarts Castle Potions Class", year:2024, num_parts:397, theme:"Harry Potter" },
+  // 2024-2025 Marvel
+  { set_num:"76270-1", name:"Iron Man Mech Armor", year:2024, num_parts:130, theme:"Marvel" },
+  { set_num:"76271-1", name:"Miles Morales Spider-Man Mech", year:2024, num_parts:78, theme:"Marvel" },
+  { set_num:"76272-1", name:"Wolverine's Adamantium Claws", year:2024, num_parts:605, theme:"Marvel" },
+  { set_num:"76273-1", name:"Avengers Tower Battle", year:2024, num_parts:685, theme:"Marvel" },
+  { set_num:"76274-1", name:"Venom Wing", year:2024, num_parts:679, theme:"Marvel" },
+  { set_num:"76275-1", name:"Motorcycle Chase Spider-Man vs. Doc Ock", year:2024, num_parts:212, theme:"Marvel" },
+  { set_num:"76276-1", name:"Venom Mech Armor vs. Miles Morales", year:2024, num_parts:134, theme:"Marvel" },
+  { set_num:"76277-1", name:"War Machine Mech Armor", year:2024, num_parts:130, theme:"Marvel" },
+  { set_num:"76278-1", name:"Rocket and Groot Mech", year:2024, num_parts:566, theme:"Marvel" },
+  { set_num:"76279-1", name:"Spider-Man's Monster Truck vs. Mysterio", year:2024, num_parts:439, theme:"Marvel" },
+  { set_num:"76281-1", name:"X-Men X-Jet", year:2024, num_parts:359, theme:"Marvel" },
+  { set_num:"76282-1", name:"Wolverine's Motorcycle", year:2024, num_parts:321, theme:"Marvel" },
+  { set_num:"76283-1", name:"Miles Morales Figure", year:2024, num_parts:238, theme:"Marvel" },
+  { set_num:"76284-1", name:"Spider-Man Downtown Swing", year:2024, num_parts:270, theme:"Marvel" },
+  { set_num:"76285-1", name:"Spider-Man Web Crawler", year:2024, num_parts:344, theme:"Marvel" },
+  { set_num:"76286-1", name:"Symbiote Surprise", year:2024, num_parts:191, theme:"Marvel" },
+  { set_num:"76287-1", name:"Spider-Man Advent Calendar", year:2024, num_parts:242, theme:"Marvel" },
+  // 2024 DC
+  { set_num:"76292-1", name:"Batman Construction Figure", year:2024, num_parts:285, theme:"DC" },
+  { set_num:"76293-1", name:"Justice League HQ", year:2024, num_parts:1183, theme:"DC" },
+  // 2024-2025 Technic
+  { set_num:"42172-1", name:"Lamborghini Lambo V12 Vision Gran Turismo", year:2024, num_parts:847, theme:"Technic" },
+  { set_num:"42173-1", name:"Ducati Panigale V4 RS", year:2024, num_parts:1075, theme:"Technic" },
+  { set_num:"42174-1", name:"Mercedes-AMG F1 W15", year:2025, num_parts:1641, theme:"Technic" },
+  { set_num:"42175-1", name:"Porsche 911 GT3 RS", year:2024, num_parts:1704, theme:"Technic" },
+  { set_num:"42176-1", name:"Liebherr LTR 1300 Crawler Crane", year:2024, num_parts:2883, theme:"Technic" },
+  { set_num:"42177-1", name:"Skid Steer Loader LT2", year:2024, num_parts:135, theme:"Technic" },
+  { set_num:"42178-1", name:"Surface Space Loader LT78", year:2024, num_parts:435, theme:"Technic" },
+  { set_num:"42179-1", name:"Formula E Panasonic Jaguar Racing GEN2", year:2024, num_parts:422, theme:"Technic" },
+  { set_num:"42180-1", name:"Mars Exploration Rover", year:2024, num_parts:1599, theme:"Technic" },
+  { set_num:"42181-1", name:"CLAAS XERION 12600 TRAC VC", year:2024, num_parts:1977, theme:"Technic" },
+  { set_num:"42182-1", name:"NASA Artemis Space Launch System", year:2024, num_parts:3601, theme:"Technic" },
+  { set_num:"42183-1", name:"Bugatti Tourbillon", year:2025, num_parts:4019, theme:"Technic" },
+  // 2024-2025 Disney
+  { set_num:"43229-1", name:"Ariel's Treasure Chest", year:2024, num_parts:370, theme:"Disney" },
+  { set_num:"43230-1", name:"Tiana's Bayou Adventure", year:2024, num_parts:577, theme:"Disney" },
+  { set_num:"43231-1", name:"Rapunzel's Tower", year:2024, num_parts:369, theme:"Disney" },
+  { set_num:"43232-1", name:"Encanto Isabela's Magical Door", year:2024, num_parts:196, theme:"Disney" },
+  { set_num:"43233-1", name:"Belle's Library", year:2024, num_parts:474, theme:"Disney" },
+  { set_num:"43234-1", name:"Mirabel's Photo Wall", year:2024, num_parts:211, theme:"Disney" },
+  { set_num:"43235-1", name:"Moana's Ocean Adventure", year:2024, num_parts:370, theme:"Disney" },
+  { set_num:"43236-1", name:"Cinderella's Castle", year:2025, num_parts:4837, theme:"Disney" },
+  { set_num:"43237-1", name:"Isabela's Flower Pot", year:2024, num_parts:783, theme:"Disney" },
+  // 2024-2025 City
+  { set_num:"60397-1", name:"4x4 Fire Truck Rescue", year:2024, num_parts:97, theme:"City" },
+  { set_num:"60398-1", name:"Family House and Electric Car", year:2024, num_parts:462, theme:"City" },
+  { set_num:"60399-1", name:"Green City Park", year:2024, num_parts:404, theme:"City" },
+  { set_num:"60400-1", name:"Lunar Roving Vehicle", year:2024, num_parts:275, theme:"City" },
+  { set_num:"60401-1", name:"Road Roller", year:2024, num_parts:87, theme:"City" },
+  { set_num:"60402-1", name:"Mobile Police Dog Training", year:2024, num_parts:197, theme:"City" },
+  { set_num:"60403-1", name:"Emergency Ambulance and Snowboarder", year:2024, num_parts:184, theme:"City" },
+  { set_num:"60404-1", name:"Burger Truck", year:2024, num_parts:194, theme:"City" },
+  { set_num:"60405-1", name:"Race Cars", year:2024, num_parts:593, theme:"City" },
+  { set_num:"60406-1", name:"Race Car Transporter", year:2024, num_parts:399, theme:"City" },
+  { set_num:"60407-1", name:"Double-Decker Sightseeing Bus", year:2024, num_parts:329, theme:"City" },
+  { set_num:"60408-1", name:"Car Transporter with Sports Car", year:2024, num_parts:628, theme:"City" },
+  { set_num:"60409-1", name:"Yellow Mobile Construction Crane", year:2024, num_parts:1116, theme:"City" },
+  { set_num:"60410-1", name:"Fire Command Response Truck", year:2024, num_parts:478, theme:"City" },
+  { set_num:"60411-1", name:"Fire Ladder Truck", year:2024, num_parts:532, theme:"City" },
+  { set_num:"60412-1", name:"4x4 Fire Truck with Rescue Boat", year:2024, num_parts:373, theme:"City" },
+  { set_num:"60413-1", name:"Air Rescue Firefighting Plane", year:2024, num_parts:628, theme:"City" },
+  { set_num:"60414-1", name:"Fire Station and Fire Truck", year:2024, num_parts:843, theme:"City" },
+  { set_num:"60415-1", name:"Police Car Chase", year:2024, num_parts:172, theme:"City" },
+  { set_num:"60416-1", name:"Beach Rescue: Hovercraft and Truck", year:2024, num_parts:781, theme:"City" },
+  { set_num:"60417-1", name:"Police Motorcycle Criminals Transport", year:2024, num_parts:169, theme:"City" },
+  { set_num:"60418-1", name:"Police Mobile Crime Lab Truck", year:2024, num_parts:674, theme:"City" },
+  { set_num:"60419-1", name:"Police Dog Training", year:2024, num_parts:197, theme:"City" },
+  { set_num:"60420-1", name:"Green Grocer", year:2024, num_parts:404, theme:"City" },
+  { set_num:"60421-1", name:"Flower and Design Stores", year:2024, num_parts:1068, theme:"City" },
+  { set_num:"60422-1", name:"Beach Pier", year:2024, num_parts:1062, theme:"City" },
+  // 2024-2025 Ninjago
+  { set_num:"71817-1", name:"Zanes Elemental Ice Mech", year:2024, num_parts:235, theme:"Ninjago" },
+  { set_num:"71818-1", name:"Lloyds Elemental Power Mech", year:2024, num_parts:278, theme:"Ninjago" },
+  { set_num:"71819-1", name:"Rocks Dragon Temple", year:2024, num_parts:532, theme:"Ninjago" },
+  { set_num:"71820-1", name:"Ninja Team Combo Mech", year:2024, num_parts:764, theme:"Ninjago" },
+  { set_num:"71821-1", name:"Dragons Rising Season 2", year:2024, num_parts:1029, theme:"Ninjago" },
+  { set_num:"71822-1", name:"Elemental Dragon vs. Empress Mech", year:2024, num_parts:1038, theme:"Ninjago" },
+  // 2024 Creator
+  { set_num:"31148-1", name:"Beach Buggy", year:2024, num_parts:373, theme:"Creator" },
+  { set_num:"31149-1", name:"Retro Camera", year:2024, num_parts:261, theme:"Creator" },
+  { set_num:"31150-1", name:"Wild Animals of Asia", year:2024, num_parts:431, theme:"Creator" },
+  { set_num:"31151-1", name:"Little Rabbit", year:2024, num_parts:258, theme:"Creator" },
+  { set_num:"31152-1", name:"Space Astronaut", year:2024, num_parts:647, theme:"Creator" },
+  { set_num:"31153-1", name:"Race Car", year:2024, num_parts:416, theme:"Creator" },
+  { set_num:"31154-1", name:"Fantasy Forest Creatures", year:2024, num_parts:175, theme:"Creator" },
+  { set_num:"31155-1", name:"Small Animals", year:2024, num_parts:200, theme:"Creator" },
+  { set_num:"31156-1", name:"Tropical Ukulele", year:2025, num_parts:246, theme:"Creator" },
 ];
 
 // ─── STATE ───────────────────────────────────────────────────────────────────
@@ -600,13 +783,35 @@ function notify(msg) {
   notifTimer = setTimeout(() => { el.style.display = "none"; }, 2800);
 }
 
-function searchLegoSets(query) {
+const EDGE_FN_URL = 'https://ibpvmncnlrobrivmjccf.supabase.co/functions/v1/bright-responder';
+
+async function searchLegoSets(query) {
   if (!query || query.length < 2) return [];
-  const q = query.toLowerCase();
-  return LEGO_DB.filter(s =>
-    s.name.toLowerCase().includes(q) || s.theme.toLowerCase().includes(q) ||
-    s.set_num.toLowerCase().includes(q) || String(s.year).includes(q)
-  ).slice(0, 8);
+  try {
+    const res = await fetch(EDGE_FN_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ query }),
+    });
+    if (!res.ok) throw new Error('Edge function error ' + res.status);
+    const data = await res.json();
+    // Map Rebrickable response to our set format
+    return (data.results || []).map(s => ({
+      set_num: s.set_num,
+      name: s.name,
+      year: s.year,
+      num_parts: s.num_parts || 0,
+      theme: s.theme_id ? String(s.theme_id) : 'LEGO',
+    }));
+  } catch(e) {
+    console.warn('Rebrickable search failed, falling back to local DB:', e.message);
+    // Fallback to local DB if edge function unreachable
+    const q = query.toLowerCase();
+    return LEGO_DB.filter(s =>
+      s.name.toLowerCase().includes(q) || s.theme.toLowerCase().includes(q) ||
+      s.set_num.toLowerCase().includes(q) || String(s.year).includes(q)
+    ).slice(0, 8);
+  }
 }
 
 // ─── RENDER ───────────────────────────────────────────────────────────────────
@@ -744,7 +949,7 @@ function render() {
       rest.innerHTML = `
         <div class="set-card-name">${set.name}</div>
         <div class="set-card-sub">#${set.set_num} · ${set.year}</div>
-        ${set.theme ? `<div class="set-theme-badge" style="color:${c?.text};background:${c?.soft};border-color:${c?.border}">${set.theme}</div>` : ""}
+        ${set.theme ? `<div class="set-theme-badge" style="color:${c?.text};background:${c?.soft};border-color:${c?.border}">${getThemeName(set.theme)}</div>` : ""}
         <div class="set-pieces">🧱 ${(set.num_parts||0).toLocaleString()} pieces</div>
         <div class="set-actions">
           ${moveTargets.map(mc=>`<button class="move-btn" title="Move to ${mc.label}" style="background:${mc.soft};border:1.5px solid ${mc.border}" data-move="${mc.id}">${mc.icon}</button>`).join("")}
@@ -793,7 +998,12 @@ document.getElementById("search-input").addEventListener("input", e => {
   clearTimeout(searchTimer);
   const q = e.target.value.trim();
   if (!q) { searchResults = []; render(); return; }
-  searchTimer = setTimeout(() => { searchResults = searchLegoSets(q); render(); }, 300);
+  searchTimer = setTimeout(async () => {
+    document.getElementById("search-label").textContent = "🔍 Searching…";
+    searchResults = await searchLegoSets(q);
+    document.getElementById("search-label").textContent = "🔍 Search LEGO sets";
+    render();
+  }, 400);
 });
 
 document.getElementById("gifter-btn").onclick = () => {
