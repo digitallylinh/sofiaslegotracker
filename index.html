@@ -108,7 +108,7 @@
   }
   #search-results-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(170px, 1fr)); gap: 10px; }
   .search-card { border-radius: 16px; padding: 10px; display: flex; flex-direction: column; gap: 6px; }
-  .search-tile { border-radius: 10px; height: 100px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px; }
+  .search-tile { border-radius: 10px; height: 120px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px; }
   .search-card-name { font-weight: 700; font-size: 12px; color: #555; line-height: 1.3; }
   .search-card-meta { font-size: 10px; color: #c0a0b0; font-weight: 600; }
   .search-add-btn { margin-top: auto; padding: 7px 0; border-radius: 10px; color: #fff; font-weight: 700; font-size: 12px; width: 100%; }
@@ -121,7 +121,7 @@
   #empty-state .empty-sub { font-size: 13px; color: #e0a0b8; }
 
   .set-card { background: #fff; border-radius: 20px; padding: 13px; box-shadow: 0 3px 14px rgba(240,100,140,0.07); position: relative; }
-  .set-tile { border-radius: 14px; height: 120px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 6px; margin-bottom: 10px; cursor: pointer; position: relative; overflow: hidden; }
+  .set-tile { border-radius: 14px; height: 180px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 6px; margin-bottom: 10px; cursor: pointer; position: relative; overflow: hidden; }
   .set-tile img { width: 100%; height: 100%; object-fit: cover; position: absolute; inset: 0; }
   .set-tile-icon { font-size: 40px; position: relative; z-index: 1; }
   .set-tile-num { font-size: 10px; font-weight: 700; position: relative; z-index: 1; }
@@ -150,7 +150,7 @@
   #manual-form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 0 10px; }
 
   .gifter-card { background: #fff; border-radius: 20px; padding: 14px; box-shadow: 0 3px 14px rgba(240,100,140,0.07); }
-  .gifter-tile { border-radius: 12px; height: 110px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 6px; margin-bottom: 10px; overflow: hidden; position: relative; }
+  .gifter-tile { border-radius: 12px; height: 160px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 6px; margin-bottom: 10px; overflow: hidden; position: relative; }
   .gifter-tile img { width: 100%; height: 100%; object-fit: cover; position: absolute; inset: 0; }
   .gifter-tile-icon, .gifter-tile-num { position: relative; z-index: 1; }
 
@@ -822,14 +822,18 @@ async function loadFromSupabase() {
 }
 
 async function dbAddSet(set, category) {
-  // First delete any existing row for this set+category, then insert fresh
   await db.from('sets').delete().eq('set_num', set.set_num).eq('category', category);
   const { error } = await db.from('sets').insert({
     set_num: set.set_num, name: set.name, year: set.year,
     num_parts: set.num_parts, theme: set.theme, category,
     brand: set.brand || 'LEGO',
   });
-  if (error) console.error('dbAddSet error:', error.message, error.details);
+  if (error) {
+    console.error('dbAddSet error:', error.message, error.details, error.hint);
+    notify('⚠️ Save failed: ' + error.message);
+    return false;
+  }
+  return true;
 }
 
 async function dbRemoveSet(setNum, category) {
@@ -849,7 +853,10 @@ async function dbMarkPurchased(setNum) {
 async function dbSavePhoto(setNum, dataUrl) {
   await db.from('photos').delete().eq('set_num', setNum);
   const { error } = await db.from('photos').insert({ set_num: setNum, data: dataUrl });
-  if (error) console.error('dbSavePhoto error:', error.message);
+  if (error) {
+    console.error('dbSavePhoto error:', error.message, error.details, error.hint);
+    notify('⚠️ Photo save failed: ' + error.message);
+  }
 }
 
 async function dbDeletePhoto(setNum) {
